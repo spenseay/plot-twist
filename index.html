@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot Twist</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: #4c2c69;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 15px;
+            color: #4c2c69;
+        }
+
+        /* Container for the game */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Section styles */
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        /* Game setup section */
+        #setup-section {
+            background-color: #fdc30f;
+            display: block;
+        }
+
+        /* Game play section */
+        #game-section {
+            background-color: white;
+            display: none;
+        }
+
+        /* Results section */
+        #results-section {
+            background-color: white;
+            display: none;
+        }
+
+        /* Final scores section styling */
+        #final-scores-section {
+            background-color: #4c2c69;
+            color: white;
+            display: none;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        #final-scores-section h2 {
+            color: white;
+        }
+        
+        #final-scores-section table {
+            background-color: white;
+            color: #4c2c69;
+        }
+        
+        #final-scores-section th {
+            background-color: #3891a6;
+            color: white;
+        }
+        
+        #final-scores-section tr:nth-child(odd) {
+            background-color: #f2f2f2;
+        }
+        
+        #final-scores-section tr:nth-child(even) {
+            background-color: white;
+        }
+        
+        #final-scores-section .winner {
+            background-color: #fdc30f;
+            color: #4c2c69;
+            font-weight: bold;
+        }
+
+        /* Form styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        /* Player list styles */
+        #players-list {
+            margin: 20px 0;
+        }
+
+        .player-item {
+            background-color: #a6d3a0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-item span {
+            flex-grow: 1;
+        }
+
+        /* Button styles */
+        button {
+            background-color: #3891a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2f758a;
+        }
+
+        button.secondary {
+            background-color: #db5461;
+        }
+
+        button.secondary:hover {
+            background-color: #c14853;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Graph styles */
+        #graph-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            border: 2px solid #4c2c69;
+            border-radius: 4px;
+        }
+
+        .axis-label {
+            position: absolute;
+            font-weight: bold;
+            color: #4c2c69;
+            z-index: 5;
+        }
+
+        .x-axis-start {
+            left: 35px;
+            top: calc(50% - 25px);
+            transform: translateY(-50%);
+        }
+
+        .x-axis-end {
+            right: 35px;
+            top: calc(50% - 25px);
+            transform: translateY(-50%);
+        }
+
+        .y-axis-start {
+            left: 50%;
+            bottom: 5px;
+            transform: translateX(-50%);
+        }
+
+        .y-axis-end {
+            left: 50%;
+            top: 5px;
+            transform: translateX(-50%);
+        }
+        
+        .axis-arrow {
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        .x-axis-arrow {
+            top: 50%;
+            left: 50px;
+            right: 50px;
+            height: 2px;
+            transform: translateY(-50%);
+            background-color: #4c2c69;
+            z-index: 1;
+        }
+        
+        .y-axis-arrow {
+            left: 50%;
+            top: 35px;
+            bottom: 35px;
+            width: 2px;
+            transform: translateX(-50%);
+            background-color: #4c2c69;
+        }
+        
+        .arrow-head {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+        
+        .arrow-left {
+            left: -6px;
+            top: -4px;
+            border-width: 5px 8px 5px 0;
+            border-color: transparent #4c2c69 transparent transparent;
+        }
+        
+        .arrow-right {
+            right: -6px;
+            top: -4px;
+            border-width: 5px 0 5px 8px;
+            border-color: transparent transparent transparent #4c2c69;
+        }
+        
+        .arrow-top {
+            top: -6px;
+            left: -4px;
+            border-width: 0 5px 8px 5px;
+            border-color: transparent transparent #4c2c69 transparent;
+        }
+        
+        .arrow-bottom {
+            bottom: -6px;
+            left: -4px;
+            border-width: 8px 5px 0 5px;
+            border-color: #4c2c69 transparent transparent transparent;
+        }
+
+        /* Pin styles */
+        .pin {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #db5461;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: grab;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            user-select: none;
+            transition: width 0.2s ease, height 0.2s ease;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .pin:active, .pin.dragging {
+            cursor: grabbing;
+            width: auto;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 10px;
+            z-index: 100;
+        }
+
+        /* Turn indicator */
+        #turn-indicator {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4c2c69;
+        }
+
+        /* Instructions */
+        .instructions {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fdc30f;
+            border-radius: 4px;
+        }
+
+        /* Results visualization */
+        .result-display {
+            margin-bottom: 40px;
+        }
+
+        .pin-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        /* Tables for scores */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3891a6;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        /* Winner highlight */
+        .winner {
+            background-color: #fdc30f;
+            font-weight: bold;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            #graph-container {
+                height: 400px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Plot Twist</h1>
+        
+        <!-- Setup Section -->
+        <div id="setup-section" class="section">
+            <h2>Player Setup</h2>
+            <div class="instructions">
+                <p>Enter the names of all players who will participate.</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="player-name">Player Name:</label>
+                <input type="text" id="player-name" placeholder="Enter player name">
+            </div>
+            
+            <button id="add-player">Add Player</button>
+            
+            <div id="players-list"></div>
+            
+            <div class="button-group">
+                <button id="start-game" disabled>Start Game</button>
+                <button id="clear-players" class="secondary">Clear All</button>
+            </div>
+        </div>
+        
+        <!-- Game Play Section -->
+        <div id="game-section" class="section">
+            <div id="turn-indicator"></div>
+            
+            <div class="instructions">
+                <p>Drag each pin to place where you think each person belongs on the graph.</p>
+                
+            </div>
+            
+            <div id="graph-container">
+                <!-- Grid lines will be added dynamically -->
+                
+                <!-- Axis labels -->
+                <div class="axis-label x-axis-start">Touches Grass</div>
+                <div class="axis-label x-axis-end">Couch Potato</div>
+                <div class="axis-label y-axis-start">Lights Candles</div>
+                <div class="axis-label y-axis-end">Lights Fires</div>
+                
+                <!-- Axis arrows -->
+                <div class="axis-arrow x-axis-arrow">
+                    <div class="arrow-head arrow-left"></div>
+                    <div class="arrow-head arrow-right"></div>
+                </div>
+                <div class="axis-arrow y-axis-arrow">
+                    <div class="arrow-head arrow-top"></div>
+                    <div class="arrow-head arrow-bottom"></div>
+                </div>
+                
+                <!-- Pins will be added dynamically -->
+            </div>
+            
+            <div class="button-group" style="justify-content: center;">
+                <button id="confirm-placement">Confirm Placement</button>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="results-section" class="section">
+            <h2>Results</h2>
+            
+            <div class="instructions">
+                <p>See where everyone placed each other! The closer a placement is to where that person placed themselves, the more points are awarded.</p>
+            </div>
+            
+            <div id="results-navigation">
+                <div id="person-result-display"></div>
+                <div id="result-graph-container"></div>
+                <div class="button-group" style="justify-content: center;">
+                    <button id="prev-result" class="secondary" disabled>Previous</button>
+                    <button id="next-result">Next</button>
+                    <button id="show-final-scores" style="display: none;">Show Final Scores</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Final Scores Section -->
+        <div id="final-scores-section">
+            <h2>Final Scores</h2>
+            <div id="final-scores-table"></div>
+            
+            <h3 style="margin-top: 30px; color: white;">Everyone's Placements</h3>
+
+            
+            <div id="collective-placements-container" style="background-color: white; border-radius: 8px; padding: 20px; margin-bottom: 30px;"></div>
+            
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
+                <p style="color: white; font-size: 18px; margin-bottom: 15px;">Thanks for playing Plot Twist, please give us some feedback</p>
+                <p style="margin-top: 10px;"><a href="https://forms.gle/P7ZFndmYZTRCye8i9" target="_blank" style="color: white; text-decoration: underline;">https://forms.gle/YL3cLa2v239HMNGe6</a></p>
+            </div>
+            
+            <div class="button-group" style="justify-content: center;">
+                <button id="play-again">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            players: [],
+            currentTurn: 0,
+            placements: {}, // This will store all player placements
+            currentResultIndex: 0,
+            axes: {
+                x: { start: "", end: "" },
+                y: { start: "", end: "" }
+            }
+        };
+        
+        // Possible axis options
+        const axisOptions = [
+            { start: "High Five", end: "Fist Bump" },
+            { start: "Couch Potato", end: "Touches Grass" },
+            { start: "Lights Candles", end: "Lights Bonfires" },
+            { start: "Silent Sneezer", end: "Powerful Sneezer" },
+            { start: "Napkin User", end: "Sleeve Wiper" },
+            { start: "Shower Singer", end: "Shower Thinker" },
+            { start: "Spider Saver", end: "Spider Squisher" },
+            { start: "Movie Talker", end: "Shusher" },
+            { start: "Sock Shoe Sock Shoe", end: "Sock Sock Shoe Shoe" },
+			{ start: "Bookworm", end: "Illiterate" },
+			{ start: "Sells feet pics", end: "Buys feet pics" },
+			{ start: "Predator", end: "Prey" },
+			{ start: "Sugar Baby", end: "Sugar Daddy/Momma" },
+			{ start: "Mountains", end: "Beach" },
+			{ start: "Early Bird", end: "The Worm" },
+			{ start: "Left on read", end: "Leaving Others On Read" },
+			{ start: "Toilet Paper Folder", end: "Toilet Paper Crumbler" },
+			{ start: "Window Seat", end: "Aisle Seat" },
+			{ start: "One Tab Open", end: "100 Tabs Open" },
+			{ start: "Instruction Reader", end: "Wings It" },
+			{ start: "Menu Studier", end: "Panic Orderer" },
+			{ start: "Punctual", end: "Fashionably Late" },
+			{ start: "Single Alarm", end: "Snooze Abuser" },
+			{ start: "Influencer", end: "Digital Detox" },
+			{ start: "Cereal First", end: "Milk First" },
+			{ start: "Boundary Setter", end: "Pushover" },
+			{ start: "Conflict Avoidant", end: "Conflict Causer" },
+			{ start: "Review Reader", end: "Impulse Buyer" },
+			{ start: "Full Tank", end: "Rides on Empty" },
+			{ start: "Matching Sock Seeker", end: "Any Two Will Do" },
+			{ start: "Hard G in GIF", end: "Soft G in GIF" },
+			{ start: "Tea Spiller", end: "Tea Drinker" },
+			{ start: "Slow Eater", end: "Speed Inhaler" },
+			{ start: "Fork and Knife Pizza", end: "Folded Slice" },
+			{ start: "Umbrella Owner", end: "Soaked And Unprepared" },
+			{ start: "Subtitles On", end: "Subtitles Off" },
+			{ start: "Socks in Bed", end: "Barefoot Sleeper" },
+			{ start: "Minimalist", end: "Maximalist" },
+			{ start: "QWERTY Expert", end: "Touch Typer" },
+			{ start: "Socks in Bed", end: "Barefoot Sleeper" },
+			{ start: "Four Suitcases", end: "Just A Backpack" },
+			{ start: "Front Row Sitter", end: "Back Row Hider" },
+			{ start: "Tailgater", end: "Defensive Driver" },
+			{ start: "Installs Updates", end: "'Remind Me Later'" },
+			{ start: "Asks for Directions", end: "Drives in Circles" },
+			{ start: "Natural Navigator", end: "Makes L with Fingers" },
+			{ start: "Watch With Numbers", end: "Watch With Hands" },
+            { start: "Power Walker", end: "Stroller" }
+        ];
+
+        // DOM Elements
+        const setupSection = document.getElementById('setup-section');
+        const gameSection = document.getElementById('game-section');
+        const resultsSection = document.getElementById('results-section');
+        const finalScoresSection = document.getElementById('final-scores-section');
+        const playerNameInput = document.getElementById('player-name');
+        const addPlayerButton = document.getElementById('add-player');
+        const playersList = document.getElementById('players-list');
+        const startGameButton = document.getElementById('start-game');
+        const clearPlayersButton = document.getElementById('clear-players');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const graphContainer = document.getElementById('graph-container');
+        const confirmPlacementButton = document.getElementById('confirm-placement');
+        const resultsNavigation = document.getElementById('results-navigation');
+        const personResultDisplay = document.getElementById('person-result-display');
+        const prevResultButton = document.getElementById('prev-result');
+        const nextResultButton = document.getElementById('next-result');
+        const showFinalScoresButton = document.getElementById('show-final-scores');
+        const finalScoresTable = document.getElementById('final-scores-table');
+        const playAgainButton = document.getElementById('play-again');
+
+        // Colors for pins in results view - updated with new color scheme
+        const playerColors = [
+            '#db5461', // New accent red
+            '#3891a6', // New accent blue
+            '#fdc30f', // New accent yellow
+            '#a6d3a0', // New accent green
+            '#4c2c69', // New primary dark
+            '#e898a0', // Lighter red
+            '#65b1c2', // Lighter blue
+            '#feec7f', // Lighter yellow
+            '#c0e2bc'  // Lighter green
+        ];
+
+        // Function to select random axes
+        function selectRandomAxes() {
+            // Shuffle axis options
+            const shuffled = [...axisOptions].sort(() => 0.5 - Math.random());
+            
+            // Select first two for x and y axes
+            const xAxis = shuffled[0];
+            const yAxis = shuffled[1];
+            
+            // Randomly decide whether to swap start/end for each axis
+            const xSwap = Math.random() > 0.5;
+            const ySwap = Math.random() > 0.5;
+            
+            gameState.axes = {
+                x: {
+                    start: xSwap ? xAxis.end : xAxis.start,
+                    end: xSwap ? xAxis.start : xAxis.end
+                },
+                y: {
+                    start: ySwap ? yAxis.end : yAxis.start,
+                    end: ySwap ? yAxis.start : yAxis.end
+                }
+            };
+            
+            // Update any visible axis labels
+            updateAxisLabels();
+        }
+        
+        // Function to update axis labels
+        function updateAxisLabels() {
+            const xStartLabels = document.querySelectorAll('.x-axis-start');
+            const xEndLabels = document.querySelectorAll('.x-axis-end');
+            const yStartLabels = document.querySelectorAll('.y-axis-start');
+            const yEndLabels = document.querySelectorAll('.y-axis-end');
+            
+            xStartLabels.forEach(label => label.textContent = gameState.axes.x.start);
+            xEndLabels.forEach(label => label.textContent = gameState.axes.x.end);
+            yStartLabels.forEach(label => label.textContent = gameState.axes.y.start);
+            yEndLabels.forEach(label => label.textContent = gameState.axes.y.end);
+        }
+
+        // Initialize with random axes on page load
+        selectRandomAxes();
+
+        // Function to add a player
+        function addPlayer() {
+            const playerName = playerNameInput.value.trim();
+            
+            if (playerName === '') {
+                alert('Please enter a player name');
+                return;
+            }
+            
+            if (gameState.players.includes(playerName)) {
+                alert('This player is already added');
+                return;
+            }
+            
+            gameState.players.push(playerName);
+            updatePlayersList();
+            playerNameInput.value = '';
+            playerNameInput.focus();
+            
+            // Enable start game button if at least 2 players
+            startGameButton.disabled = gameState.players.length < 2;
+        }
+
+        // Function to update the list of players
+        function updatePlayersList() {
+            playersList.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                
+                const playerNumber = document.createElement('div');
+                playerNumber.textContent = `${index + 1}.`;
+                playerNumber.style.marginRight = '10px';
+                
+                const playerName = document.createElement('span');
+                playerName.textContent = player;
+                
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.className = 'secondary';
+                removeButton.style.padding = '5px 10px';
+                removeButton.onclick = () => {
+                    gameState.players.splice(index, 1);
+                    updatePlayersList();
+                    // Disable start game button if less than 2 players
+                    startGameButton.disabled = gameState.players.length < 2;
+                };
+                
+                playerItem.appendChild(playerNumber);
+                playerItem.appendChild(playerName);
+                playerItem.appendChild(removeButton);
+                
+                playersList.appendChild(playerItem);
+            });
+        }
+
+        // Function to start the game
+        function startGame() {
+            setupSection.style.display = 'none';
+            gameSection.style.display = 'block';
+            
+            // Initialize placements object
+            gameState.placements = {};
+            gameState.players.forEach(player => {
+                gameState.placements[player] = {};
+            });
+            
+            // Select random axes
+            selectRandomAxes();
+            
+            // Set current turn to first player
+            gameState.currentTurn = 0;
+            startPlayerTurn();
+        }
+
+        // Function to start a player's turn
+        function startPlayerTurn() {
+            const currentPlayer = gameState.players[gameState.currentTurn];
+            turnIndicator.textContent = `${currentPlayer}'s Turn`;
+            
+            // Clear previous pins
+            const pins = document.querySelectorAll('.pin');
+            pins.forEach(pin => pin.remove());
+            
+            // Create pins for all players
+            gameState.players.forEach((player, index) => {
+                createPin(player, index);
+            });
+        }
+
+        // Function to create a draggable pin
+        function createPin(player, index) {
+            const pin = document.createElement('div');
+            pin.className = 'pin';
+            
+            // Generate a unique identifier if there are players with the same first letter
+            let playerInitial = player.charAt(0).toUpperCase();
+            const sameInitialCount = gameState.players.filter(p => 
+                p.charAt(0).toUpperCase() === playerInitial).length;
+                
+            // If multiple players have the same initial, add a number suffix (S, S2, S3, etc.)
+            if (sameInitialCount > 1) {
+                // Count how many players with this initial we've seen already
+                const playersBefore = gameState.players.slice(0, index)
+                    .filter(p => p.charAt(0).toUpperCase() === playerInitial).length;
+                    
+                // If this isn't the first one, add a number
+                if (playersBefore > 0) {
+                    playerInitial += (playersBefore + 1);
+                }
+            }
+            
+            pin.textContent = playerInitial;
+            pin.id = `pin-${player}`;
+            pin.setAttribute('data-player', player);
+            pin.setAttribute('data-fullname', player);
+            
+            // Set initial position to center
+            pin.style.left = '50%';
+            pin.style.top = '50%';
+            
+            // Make pin draggable
+            pin.onmousedown = dragStart;
+            
+            graphContainer.appendChild(pin);
+        }
+
+        // Dragging functionality
+        let activeDragPin = null;
+        let startX, startY;
+
+        function dragStart(e) {
+            e.preventDefault();
+            activeDragPin = e.target;
+            
+            // Show full name when dragging
+            const fullName = activeDragPin.getAttribute('data-fullname');
+            activeDragPin.textContent = fullName;
+            activeDragPin.classList.add('dragging');
+            
+            // Get initial positions
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            // Add event listeners for dragging
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', dragEnd);
+        }
+
+        function dragMove(e) {
+            if (!activeDragPin) return;
+            
+            const rect = graphContainer.getBoundingClientRect();
+            
+            // Calculate new position relative to graph container
+            let newX = (e.clientX - rect.left);
+            let newY = (e.clientY - rect.top);
+            
+            // Constrain to graph boundaries
+            newX = Math.max(0, Math.min(newX, rect.width));
+            newY = Math.max(0, Math.min(newY, rect.height));
+            
+            // Update pin position
+            activeDragPin.style.left = `${newX}px`;
+            activeDragPin.style.top = `${newY}px`;
+        }
+
+        function dragEnd() {
+            if (activeDragPin) {
+                // Restore initial/shorter display when drag ends
+                const player = activeDragPin.getAttribute('data-player');
+                
+                // Find the player's index to determine if we need to add a number 
+                const playerIndex = gameState.players.indexOf(player);
+                let playerInitial = player.charAt(0).toUpperCase();
+                
+                const sameInitialCount = gameState.players.filter(p => 
+                    p.charAt(0).toUpperCase() === playerInitial).length;
+                    
+                if (sameInitialCount > 1) {
+                    const playersBefore = gameState.players.slice(0, playerIndex)
+                        .filter(p => p.charAt(0).toUpperCase() === playerInitial).length;
+                        
+                    if (playersBefore > 0) {
+                        playerInitial += (playersBefore + 1);
+                    }
+                }
+                
+                activeDragPin.textContent = playerInitial;
+                activeDragPin.classList.remove('dragging');
+            }
+            
+            activeDragPin = null;
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', dragEnd);
+        }
+
+        // Function to confirm placement and move to next turn
+        function confirmPlacement() {
+            const currentPlayer = gameState.players[gameState.currentTurn];
+            const placements = {};
+            
+            // Get positions of all pins
+            const pins = document.querySelectorAll('.pin');
+            pins.forEach(pin => {
+                const player = pin.getAttribute('data-player');
+                const rect = graphContainer.getBoundingClientRect();
+                
+                // Calculate normalized position (0-1)
+                const x = parseFloat(pin.style.left) / rect.width;
+                const y = parseFloat(pin.style.top) / rect.height;
+                
+                placements[player] = { x, y };
+            });
+            
+            // Save placements
+            gameState.placements[currentPlayer] = placements;
+            
+            // Move to next turn or show results
+            gameState.currentTurn++;
+            if (gameState.currentTurn < gameState.players.length) {
+                startPlayerTurn();
+            } else {
+                showResults();
+            }
+        }
+
+        // Function to show results
+        function showResults() {
+            gameSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+            
+            // Reset result index
+            gameState.currentResultIndex = 0;
+            
+            // Show first result
+            showPersonResult(gameState.currentResultIndex);
+        }
+
+        // Function to show result for a specific person
+        function showPersonResult(index) {
+            const person = gameState.players[index];
+            personResultDisplay.innerHTML = '';
+            
+            // Create header
+            const header = document.createElement('h3');
+            header.textContent = `See where ${person} was placed`;
+            personResultDisplay.appendChild(header);
+            
+            // Create result graph
+            const resultGraphContainer = document.createElement('div');
+            resultGraphContainer.style.position = 'relative';
+            resultGraphContainer.style.width = '100%';
+            resultGraphContainer.style.maxWidth = '600px';
+            resultGraphContainer.style.height = '600px';
+            resultGraphContainer.style.margin = '0 auto';
+            resultGraphContainer.style.border = '2px solid #4c2c69';
+            resultGraphContainer.style.borderRadius = '4px';
+            
+            // Add axis labels
+            const xAxisStart = document.createElement('div');
+            xAxisStart.className = 'axis-label x-axis-start';
+            xAxisStart.textContent = gameState.axes.x.start;
+            resultGraphContainer.appendChild(xAxisStart);
+            
+            const xAxisEnd = document.createElement('div');
+            xAxisEnd.className = 'axis-label x-axis-end';
+            xAxisEnd.textContent = gameState.axes.x.end;
+            resultGraphContainer.appendChild(xAxisEnd);
+            
+            const yAxisStart = document.createElement('div');
+            yAxisStart.className = 'axis-label y-axis-start';
+            yAxisStart.textContent = gameState.axes.y.start;
+            resultGraphContainer.appendChild(yAxisStart);
+            
+            const yAxisEnd = document.createElement('div');
+            yAxisEnd.className = 'axis-label y-axis-end';
+            yAxisEnd.textContent = gameState.axes.y.end;
+            resultGraphContainer.appendChild(yAxisEnd);
+            
+            // Axis arrows
+            const resultXAxisArrow = document.createElement('div');
+            resultXAxisArrow.className = 'axis-arrow x-axis-arrow';
+            
+            const resultXArrowLeft = document.createElement('div');
+            resultXArrowLeft.className = 'arrow-head arrow-left';
+            resultXAxisArrow.appendChild(resultXArrowLeft);
+            
+            const resultXArrowRight = document.createElement('div');
+            resultXArrowRight.className = 'arrow-head arrow-right';
+            resultXAxisArrow.appendChild(resultXArrowRight);
+            
+            resultGraphContainer.appendChild(resultXAxisArrow);
+            
+            const resultYAxisArrow = document.createElement('div');
+            resultYAxisArrow.className = 'axis-arrow y-axis-arrow';
+            
+            const resultYArrowTop = document.createElement('div');
+            resultYArrowTop.className = 'arrow-head arrow-top';
+            resultYAxisArrow.appendChild(resultYArrowTop);
+            
+            const resultYArrowBottom = document.createElement('div');
+            resultYArrowBottom.className = 'arrow-head arrow-bottom';
+            resultYAxisArrow.appendChild(resultYArrowBottom);
+            
+            resultGraphContainer.appendChild(resultYAxisArrow);
+            
+            // Add axis arrows
+            const xAxisArrow = document.createElement('div');
+            xAxisArrow.className = 'axis-arrow x-axis-arrow';
+            
+            const xArrowLeft = document.createElement('div');
+            xArrowLeft.className = 'arrow-head arrow-left';
+            xAxisArrow.appendChild(xArrowLeft);
+            
+            const xArrowRight = document.createElement('div');
+            xArrowRight.className = 'arrow-head arrow-right';
+            xAxisArrow.appendChild(xArrowRight);
+            
+            resultGraphContainer.appendChild(xAxisArrow);
+            
+            const yAxisArrow = document.createElement('div');
+            yAxisArrow.className = 'axis-arrow y-axis-arrow';
+            
+            const yArrowTop = document.createElement('div');
+            yArrowTop.className = 'arrow-head arrow-top';
+            yAxisArrow.appendChild(yArrowTop);
+            
+            const yArrowBottom = document.createElement('div');
+            yArrowBottom.className = 'arrow-head arrow-bottom';
+            yAxisArrow.appendChild(yArrowBottom);
+            
+            resultGraphContainer.appendChild(yAxisArrow);
+            
+            // No grid lines as requested
+            
+            // Add pins for all placements of this person
+            let selfPlacement = null;
+            
+            gameState.players.forEach((player, playerIndex) => {
+                const placement = gameState.placements[player][person];
+                
+                // Skip if no placement
+                if (!placement) return;
+                
+                const pin = document.createElement('div');
+                pin.className = 'pin';
+                
+                // Use same initial/number scheme as in the game
+                let playerInitial = player.charAt(0).toUpperCase();
+                const sameInitialCount = gameState.players.filter(p => 
+                    p.charAt(0).toUpperCase() === playerInitial).length;
+                    
+                if (sameInitialCount > 1) {
+                    const playersBefore = gameState.players.slice(0, playerIndex)
+                        .filter(p => p.charAt(0).toUpperCase() === playerInitial).length;
+                        
+                    if (playersBefore > 0) {
+                        playerInitial += (playersBefore + 1);
+                    }
+                }
+                
+                pin.textContent = playerInitial;
+                pin.style.backgroundColor = playerColors[playerIndex % playerColors.length];
+                
+                // Convert normalized position to pixels
+                pin.style.left = `${placement.x * 100}%`;
+                pin.style.top = `${placement.y * 100}%`;
+                
+                // Save self placement for reference
+                if (player === person) {
+                    selfPlacement = placement;
+                    pin.style.border = '3px solid white';
+                    pin.style.zIndex = '20';
+                }
+                
+                resultGraphContainer.appendChild(pin);
+            });
+            
+            personResultDisplay.appendChild(resultGraphContainer);
+            
+            // Add legend
+            const legend = document.createElement('div');
+            legend.className = 'pin-legend';
+            
+            gameState.players.forEach((player, playerIndex) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = playerColors[playerIndex % playerColors.length];
+                
+                if (player === person) {
+                    colorBox.style.border = '2px solid #4c2c69';
+                }
+                
+                const playerName = document.createElement('span');
+                playerName.textContent = player;
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(playerName);
+                legend.appendChild(legendItem);
+            });
+            
+            personResultDisplay.appendChild(legend);
+            
+            // Add scores for this person
+            if (selfPlacement) {
+                const scoresContainer = document.createElement('div');
+                scoresContainer.style.marginTop = '20px';
+                
+                const scoresHeader = document.createElement('h3');
+                scoresHeader.textContent = 'Scores for this placement:';
+                scoresContainer.appendChild(scoresHeader);
+                
+                const scoresTable = document.createElement('table');
+                
+                // Create table header
+                const tableHeader = document.createElement('tr');
+                const playerHeader = document.createElement('th');
+                playerHeader.textContent = 'Player';
+                const scoreHeader = document.createElement('th');
+                scoreHeader.textContent = 'Points';
+                
+                tableHeader.appendChild(playerHeader);
+                tableHeader.appendChild(scoreHeader);
+                scoresTable.appendChild(tableHeader);
+                
+                // Add scores for each player
+                const scores = [];
+                
+                gameState.players.forEach(player => {
+                    if (player === person) return; // Skip self
+                    
+                    const placement = gameState.placements[player][person];
+                    if (!placement) return;
+                    
+                    // Calculate distance
+                    const distance = calculateDistance(selfPlacement, placement);
+                    
+                    // Calculate score (100 - distance * 100)
+                    const maxDistance = Math.sqrt(2); // Maximum possible distance in a 1x1 square
+                    const score = Math.max(0, Math.round(100 - (distance / maxDistance) * 100));
+                    
+                    scores.push({ player, score });
+                });
+                
+                // Sort scores by highest first
+                scores.sort((a, b) => b.score - a.score);
+                
+                // Add rows for each score
+                scores.forEach(({ player, score }) => {
+                    const row = document.createElement('tr');
+                    
+                    const playerCell = document.createElement('td');
+                    playerCell.textContent = player;
+                    
+                    const scoreCell = document.createElement('td');
+                    scoreCell.textContent = score + ' points';
+                    
+                    row.appendChild(playerCell);
+                    row.appendChild(scoreCell);
+                    scoresTable.appendChild(row);
+                });
+                
+                scoresContainer.appendChild(scoresTable);
+                personResultDisplay.appendChild(scoresContainer);
+            }
+            
+            // Update navigation buttons
+            prevResultButton.disabled = index === 0;
+            
+            if (index === gameState.players.length - 1) {
+                nextResultButton.style.display = 'none';
+                showFinalScoresButton.style.display = 'block';
+            } else {
+                nextResultButton.style.display = 'block';
+                showFinalScoresButton.style.display = 'none';
+            }
+        }
+
+        // Function to calculate distance between two points
+        function calculateDistance(point1, point2) {
+            const dx = point1.x - point2.x;
+            const dy = point1.y - point2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Function to calculate final scores
+        function calculateFinalScores() {
+            const scores = {};
+            
+            // Initialize scores
+            gameState.players.forEach(player => {
+                scores[player] = 0;
+            });
+            
+            // Calculate scores for each player
+            gameState.players.forEach(person => {
+                const selfPlacement = gameState.placements[person][person];
+                
+                gameState.players.forEach(player => {
+                    if (player === person) return; // Skip self
+                    
+                    const placement = gameState.placements[player][person];
+                    
+                    // Calculate distance
+                    const distance = calculateDistance(selfPlacement, placement);
+                    
+                    // Calculate score (100 - distance * 100)
+                    const maxDistance = Math.sqrt(2); // Maximum possible distance in a 1x1 square
+                    const score = Math.max(0, Math.round(100 - (distance / maxDistance) * 100));
+                    
+                    // Add score
+                    scores[player] += score;
+                });
+            });
+            
+            return scores;
+        }
+
+        // Function to show final scores
+        function showFinalScores() {
+            resultsSection.style.display = 'none';
+            finalScoresSection.style.display = 'block';
+            
+            // Calculate scores
+            const scores = calculateFinalScores();
+            
+            // Convert to array and sort
+            const sortedScores = Object.entries(scores)
+                .map(([player, score]) => ({ player, score }))
+                .sort((a, b) => b.score - a.score);
+            
+            // Create table
+            const table = document.createElement('table');
+            
+            // Create header
+            const header = document.createElement('tr');
+            const rankHeader = document.createElement('th');
+            rankHeader.textContent = 'Rank';
+            const playerHeader = document.createElement('th');
+            playerHeader.textContent = 'Player';
+            const scoreHeader = document.createElement('th');
+            scoreHeader.textContent = 'Score';
+            
+            header.appendChild(rankHeader);
+            header.appendChild(playerHeader);
+            header.appendChild(scoreHeader);
+            table.appendChild(header);
+            
+            // Add rows for each player
+            sortedScores.forEach((score, index) => {
+                const row = document.createElement('tr');
+                
+                // Add winner class to first place
+                if (index === 0) {
+                    row.className = 'winner';
+                }
+                
+                const rankCell = document.createElement('td');
+                rankCell.textContent = index + 1;
+                
+                const playerCell = document.createElement('td');
+                playerCell.textContent = score.player;
+                
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = score.score + ' points';
+                
+                row.appendChild(rankCell);
+                row.appendChild(playerCell);
+                row.appendChild(scoreCell);
+                table.appendChild(row);
+            });
+            
+            finalScoresTable.innerHTML = '';
+            finalScoresTable.appendChild(table);
+            
+            // Add winner announcement
+            const winner = sortedScores[0];
+            const winnerAnnouncement = document.createElement('div');
+            winnerAnnouncement.style.textAlign = 'center';
+            winnerAnnouncement.style.fontSize = '24px';
+            winnerAnnouncement.style.margin = '20px 0';
+            winnerAnnouncement.innerHTML = `<strong>${winner.player}</strong> knows their friends best with ${winner.score} points!`;
+            
+            finalScoresTable.appendChild(winnerAnnouncement);
+            
+            // Create and show the collective placements chart
+            createCollectivePlacementsChart();
+        }
+
+        // Function to reset the game
+        function resetGame() {
+            // Reset game state
+            gameState.players = [];
+            gameState.currentTurn = 0;
+            gameState.placements = {};
+            gameState.currentResultIndex = 0;
+            
+            // Clear player list
+            playersList.innerHTML = '';
+            
+            // Reset UI
+            setupSection.style.display = 'block';
+            gameSection.style.display = 'none';
+            resultsSection.style.display = 'none';
+            finalScoresSection.style.display = 'none';
+            
+            // Disable start game button
+            startGameButton.disabled = true;
+            
+            // Reset player name input
+            playerNameInput.value = '';
+            playerNameInput.focus();
+            
+            // Select new random axes
+            selectRandomAxes();
+        }
+
+        // Event Listeners
+        addPlayerButton.addEventListener('click', addPlayer);
+        
+        playerNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                addPlayer();
+            }
+        });
+        
+        clearPlayersButton.addEventListener('click', () => {
+            gameState.players = [];
+            updatePlayersList();
+            startGameButton.disabled = true;
+        });
+        
+        startGameButton.addEventListener('click', startGame);
+        
+        confirmPlacementButton.addEventListener('click', confirmPlacement);
+        
+        prevResultButton.addEventListener('click', () => {
+            gameState.currentResultIndex--;
+            showPersonResult(gameState.currentResultIndex);
+        });
+        
+        nextResultButton.addEventListener('click', () => {
+            gameState.currentResultIndex++;
+            showPersonResult(gameState.currentResultIndex);
+        });
+        
+        showFinalScoresButton.addEventListener('click', showFinalScores);
+        
+        playAgainButton.addEventListener('click', resetGame);
+
+        // Helper function to determine if text should be dark or light based on background color
+        function getContrastYIQ(hexcolor) {
+            // If hexcolor contains # at the beginning, remove it
+            if (hexcolor.charAt(0) === '#') {
+                hexcolor = hexcolor.substr(1);
+            }
+            
+            // Convert to RGB
+            const r = parseInt(hexcolor.substr(0, 2), 16);
+            const g = parseInt(hexcolor.substr(2, 2), 16);
+            const b = parseInt(hexcolor.substr(4, 2), 16);
+            
+            // Calculate YIQ ratio
+            return ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        }
+        
+        // Function to create collective placements chart
+        function createCollectivePlacementsChart() {
+            const container = document.getElementById('collective-placements-container');
+            container.innerHTML = '';
+            
+            // Add a title for the visualization
+            const chartTitle = document.createElement('h3');
+            chartTitle.textContent = 'Player Placement Map';
+            chartTitle.style.textAlign = 'center';
+            chartTitle.style.marginBottom = '20px';
+            chartTitle.style.color = '#4c2c69';
+            container.appendChild(chartTitle);
+            
+            // Create chart container
+            const chartContainer = document.createElement('div');
+            chartContainer.style.position = 'relative';
+            chartContainer.style.width = '100%';
+            chartContainer.style.maxWidth = '600px';
+            chartContainer.style.height = '600px';
+            chartContainer.style.margin = '0 auto';
+            chartContainer.style.border = '2px solid #4c2c69';
+            chartContainer.style.borderRadius = '4px';
+            chartContainer.style.backgroundColor = 'white';
+            
+            // Add axis labels
+            const xAxisStart = document.createElement('div');
+            xAxisStart.className = 'axis-label x-axis-start';
+            xAxisStart.textContent = gameState.axes.x.start;
+            chartContainer.appendChild(xAxisStart);
+            
+            const xAxisEnd = document.createElement('div');
+            xAxisEnd.className = 'axis-label x-axis-end';
+            xAxisEnd.textContent = gameState.axes.x.end;
+            chartContainer.appendChild(xAxisEnd);
+            
+            const yAxisStart = document.createElement('div');
+            yAxisStart.className = 'axis-label y-axis-start';
+            yAxisStart.textContent = gameState.axes.y.start;
+            chartContainer.appendChild(yAxisStart);
+            
+            const yAxisEnd = document.createElement('div');
+            yAxisEnd.className = 'axis-label y-axis-end';
+            yAxisEnd.textContent = gameState.axes.y.end;
+            chartContainer.appendChild(yAxisEnd);
+            
+            // Add axis arrows
+            const xAxisArrow = document.createElement('div');
+            xAxisArrow.className = 'axis-arrow x-axis-arrow';
+            
+            const xArrowLeft = document.createElement('div');
+            xArrowLeft.className = 'arrow-head arrow-left';
+            xAxisArrow.appendChild(xArrowLeft);
+            
+            const xArrowRight = document.createElement('div');
+            xArrowRight.className = 'arrow-head arrow-right';
+            xAxisArrow.appendChild(xArrowRight);
+            
+            chartContainer.appendChild(xAxisArrow);
+            
+            const yAxisArrow = document.createElement('div');
+            yAxisArrow.className = 'axis-arrow y-axis-arrow';
+            
+            const yArrowTop = document.createElement('div');
+            yArrowTop.className = 'arrow-head arrow-top';
+            yAxisArrow.appendChild(yArrowTop);
+            
+            const yArrowBottom = document.createElement('div');
+            yArrowBottom.className = 'arrow-head arrow-bottom';
+            yAxisArrow.appendChild(yArrowBottom);
+            
+            chartContainer.appendChild(yAxisArrow);
+            
+            // Add pins for all players
+            // For each person, collect all placements made by others
+            gameState.players.forEach((person, personIndex) => {
+                const personColor = playerColors[personIndex % playerColors.length];
+                
+                // For each player who placed this person
+                gameState.players.forEach(placer => {
+                    const placement = gameState.placements[placer][person];
+                    
+                    // Skip if no placement
+                    if (!placement) return;
+                    
+                    const pin = document.createElement('div');
+                    pin.className = 'pin';
+                    pin.style.backgroundColor = personColor;
+                    
+                    // Make self-placement pins stand out
+                    if (placer === person) {
+                        pin.style.border = '3px solid white';
+                        pin.style.zIndex = '20';
+                        pin.textContent = person.charAt(0).toUpperCase();
+                        
+                        // Improve contrast for text in pin
+                        pin.style.fontWeight = 'bold';
+                        pin.style.fontSize = '16px';
+                        pin.style.textShadow = '0px 0px 2px #000';
+                        
+                        // Add a slight text outline to improve readability
+                        if (getContrastYIQ(personColor) < 128) {
+                            // For dark background colors
+                            pin.style.color = 'white';
+                        } else {
+                            // For light background colors
+                            pin.style.color = '#4c2c69';
+                        }
+                    } else {
+                        pin.style.opacity = '0.7';
+                        pin.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                    }
+                    
+                    // Convert normalized position to pixels
+                    pin.style.left = `${placement.x * 100}%`;
+                    pin.style.top = `${placement.y * 100}%`;
+                    
+                    chartContainer.appendChild(pin);
+                });
+            });
+            
+            container.appendChild(chartContainer);
+            
+            // Add improved legend with title
+            const legendTitle = document.createElement('h4');
+            legendTitle.textContent = 'Player Colors';
+            legendTitle.style.textAlign = 'center';
+            legendTitle.style.margin = '20px 0 10px 0';
+            legendTitle.style.fontSize = '18px';
+            legendTitle.style.fontWeight = 'bold';
+            legendTitle.style.color = '#4c2c69';
+            container.appendChild(legendTitle);
+            
+            const legend = document.createElement('div');
+            legend.className = 'pin-legend';
+            legend.style.justifyContent = 'center';
+            legend.style.margin = '10px auto 20px auto';
+            legend.style.maxWidth = '600px';
+            legend.style.display = 'flex';
+            legend.style.flexWrap = 'wrap';
+            legend.style.gap = '10px';
+            
+            gameState.players.forEach((player, playerIndex) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.style.padding = '8px 15px';
+                legendItem.style.borderRadius = '6px';
+                legendItem.style.backgroundColor = '#f9f9f9';
+                legendItem.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
+                legendItem.style.margin = '5px';
+                legendItem.style.minWidth = '120px';
+                legendItem.style.border = '1px solid #e5e5e5';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.width = '24px';
+                colorBox.style.height = '24px';
+                colorBox.style.borderRadius = '50%';
+                colorBox.style.backgroundColor = playerColors[playerIndex % playerColors.length];
+                colorBox.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+                
+                const playerName = document.createElement('span');
+                playerName.textContent = player;
+                playerName.style.marginLeft = '12px';
+                playerName.style.fontWeight = 'bold';
+                playerName.style.color = '#4c2c69';
+                
+                legendItem.appendChild(colorBox);
+                legendItem.appendChild(playerName);
+                legend.appendChild(legendItem);
+            });
+            
+            container.appendChild(legend);
+            
+            // Add explanation
+            /*const explanation = document.createElement('p');
+            explanation.style.textAlign = 'center';
+            explanation.style.margin = '0 auto 20px auto';
+            explanation.style.maxWidth = '600px';
+            explanation.style.padding = '10px';
+            explanation.style.backgroundColor = '#f9f9f9';
+            explanation.style.borderRadius = '4px';
+            explanation.innerHTML = 'Dots show where everyone was placed. <strong>Larger dots with white borders</strong> show where players placed themselves.';
+            */
+            container.appendChild(explanation);
+        }
+        function touchStart(e) {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                activeDragPin = e.target;
+                
+                // Show full name when dragging on touch
+                const fullName = activeDragPin.getAttribute('data-fullname');
+                activeDragPin.textContent = fullName;
+                activeDragPin.classList.add('dragging');
+                
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                
+                document.addEventListener('touchmove', touchMove, { passive: false });
+                document.addEventListener('touchend', touchEnd);
+            }
+        }
+
+        function touchMove(e) {
+            e.preventDefault();
+            if (!activeDragPin || e.touches.length !== 1) return;
+            
+            const rect = graphContainer.getBoundingClientRect();
+            
+            // Calculate new position relative to graph container
+            let newX = (e.touches[0].clientX - rect.left);
+            let newY = (e.touches[0].clientY - rect.top);
+            
+            // Constrain to graph boundaries
+            newX = Math.max(0, Math.min(newX, rect.width));
+            newY = Math.max(0, Math.min(newY, rect.height));
+            
+            // Update pin position
+            activeDragPin.style.left = `${newX}px`;
+            activeDragPin.style.top = `${newY}px`;
+        }
+
+        function touchEnd() {
+            if (activeDragPin) {
+                // Restore initial/shorter display when drag ends
+                const player = activeDragPin.getAttribute('data-player');
+                
+                // Find the player's index to determine if we need to add a number 
+                const playerIndex = gameState.players.indexOf(player);
+                let playerInitial = player.charAt(0).toUpperCase();
+                
+                const sameInitialCount = gameState.players.filter(p => 
+                    p.charAt(0).toUpperCase() === playerInitial).length;
+                    
+                if (sameInitialCount > 1) {
+                    const playersBefore = gameState.players.slice(0, playerIndex)
+                        .filter(p => p.charAt(0).toUpperCase() === playerInitial).length;
+                        
+                    if (playersBefore > 0) {
+                        playerInitial += (playersBefore + 1);
+                    }
+                }
+                
+                activeDragPin.textContent = playerInitial;
+                activeDragPin.classList.remove('dragging');
+            }
+            
+            activeDragPin = null;
+            document.removeEventListener('touchmove', touchMove);
+            document.removeEventListener('touchend', touchEnd);
+        }
+
+        // Add touch event listeners to pins dynamically
+        function addTouchListeners() {
+            document.addEventListener('touchstart', function(e) {
+                if (e.target.classList.contains('pin')) {
+                    touchStart.call(e.target, e);
+                }
+            }, { passive: false });
+        }
+
+        // Initialize touch support
+        addTouchListeners();
+    </script>
+</body>
+</html>
