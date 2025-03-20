@@ -687,7 +687,7 @@
 			{ start: "Tells White Lies", end: "Brutal Honesty Always" },
 			{ start: "Health Is Wealth", end: "Wealth Is Wealth" },
 			{ start: "Would Choose Knowledge", end: "Would Choose Happiness" },
-            { start: "Power Walker", end: "Stroller" }
+      { start: "Power Walker", end: "Stroller" }
     ];
 
     // Color palette
@@ -706,25 +706,26 @@
     // Randomize immediately when the script loads - this guarantees randomization on page refresh
     function forceRandomizeAxes() {
       // Create a new shuffled array from axisOptions
+      /* old randomization
       const shuffled = [...axisOptions].sort(() => 0.5 - Math.random());
+      */
+     let arr = [...axisOptions];
+     const shuffled = [...arr].map((x, i) => {
+        const j = Math.floor(Math.random() * arr.length);
+        return arr.splice(j, 1)[0];
+     });
       
       // Pick the first two for X and Y
       const xAxis = shuffled[0];
       const yAxis = shuffled[1] || shuffled[0]; // Fallback if we only have one option
       
-      // 50/50 chance to flip the direction of each axis
-      const xSwap = Math.random() > 0.5;
-      const ySwap = Math.random() > 0.5;
-      
       // Set the axes in gameState
       gameState.axes = {
         x: {
-          start: xSwap ? xAxis.end : xAxis.start,
-          end: xSwap ? xAxis.start : xAxis.end
+          ...xAxis
         },
         y: {
-          start: ySwap ? yAxis.end : yAxis.start,
-          end: ySwap ? yAxis.start : yAxis.end
+          ...yAxis
         }
       };
       
