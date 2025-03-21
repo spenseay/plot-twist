@@ -1,60 +1,33 @@
-<script lang="ts">
+<script>
   import { onMount } from 'svelte';
   import { axisOptions } from '../lib/data/axisOptions.js';
   import { getContrastYIQ } from '$lib/utils/colorUtils.js';
   import { calculateDistance } from '$lib/utils/mathUtils.js';
   import { adjustYAxisArrow, adjustYAxisArrowForChart, selectRandomAxes } from '$lib/utils/axisUtils.js';
+  import gameStore, { actions } from '$lib/stores/gameStore.js';
 
-  // Type definitions
-  interface AxisDef {
-    start: string;
-    end: string;
-  }
+  // Subscribe to the game store
+  import { get } from 'svelte/store';
 
-  interface Axes {
-    x: AxisDef;
-    y: AxisDef;
-  }
+// Use the $ syntax for auto-subscription
+$: gameState = $gameStore;
+$: players = gameState?.players || [];
+$: currentTurn = gameState?.currentTurn || 0;
+$: placements = gameState?.placements || {};
+$: selectedFilter = gameState?.selectedFilter || 'all';
+$: setupSectionVisible = gameState?.setupSectionVisible ?? true;
+$: gameSectionVisible = gameState?.gameSectionVisible ?? false;
+$: finalScoresSectionVisible = gameState?.finalScoresSectionVisible ?? false;
+$: nextZIndex = gameState?.nextZIndex || 100;
+$: allPinsPlaced = gameState?.allPinsPlaced || false;
+$: playerNameInput = gameState?.playerNameInput || '';
+$: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "" } };
 
-  interface Coordinate {
-    x: number;
-    y: number;
-  }
+  // Active drag pin is still managed locally (not in store)
+  let activeDragPin = null;
 
-  interface PlayerPlacements {
-    [player: string]: Coordinate;
-  }
-
-  interface AllPlacements {
-    [placer: string]: PlayerPlacements;
-  }
-
-  interface PlayerScore {
-    player: string;
-    score: number;
-  }
-
-  // -- Game State --
-  let players: string[] = [];
-  let currentTurn: number = 0;
-  let placements: AllPlacements = {};
-  let selectedFilter: string = 'all';
-  let setupSectionVisible: boolean = true;
-  let gameSectionVisible: boolean = false;
-  let finalScoresSectionVisible: boolean = false;
-  let nextZIndex: number = 100;
-  let allPinsPlaced: boolean = false;
-  let activeDragPin: HTMLElement | null = null;
-  let playerNameInput: string = '';
-  
-  // Graph axis state
-  let axes: Axes = {
-    x: { start: "", end: "" },
-    y: { start: "", end: "" }
-  };
-
-  // Color palette
-  const playerColors: string[] = [
+  // Color palette (doesn't need to be in the store)
+  const playerColors = [
     '#db5461',
     '#3891a6',
     '#fdc30f',
@@ -67,13 +40,13 @@
   ];
 
   // DOM references
-  let graphContainer: HTMLDivElement;
-  let pinsContainer: HTMLDivElement;
-  let turnIndicatorElement: HTMLDivElement;
-  let pinsStatusElement: HTMLDivElement;
-  let finalScoresTableElement: HTMLDivElement;
-  let playerFilterButtonsElement: HTMLDivElement;
-  let collectivePlacementsContainerElement: HTMLDivElement;
+  let graphContainer;
+  let pinsContainer;
+  let turnIndicatorElement;
+  let pinsStatusElement;
+  let finalScoresTableElement;
+  let playerFilterButtonsElement;
+  let collectivePlacementsContainerElement;
 
   // Reactive declarations
   $: startGameDisabled = players.length < 2;
@@ -95,11 +68,14 @@
   }
 
   onMount(() => {
-    axes = selectRandomAxes(axisOptions);
+    gameStore.update(state => ({
+      ...state,
+      axes: selectRandomAxes(axisOptions)
+    }));
   });
 
   // -- Player Management --
-  function addPlayer(): void {
+  function addPlayer() {
     const playerName = playerNameInput.trim();
     if (!playerName) {
       alert('Please enter a player name.');
@@ -109,38 +85,39 @@
       alert('This player is already added.');
       return;
     }
-    players = [...players, playerName];
-    playerNameInput = '';
+    
+    // Update through the store instead
+    actions.addPlayer(playerName);
   }
 
-  function removePlayer(index: number): void {
-    players = players.filter((_, i) => i !== index);
+  function removePlayer(index) {
+    actions.removePlayer(index);
   }
 
-  function clearPlayers(): void {
-    players = [];
+  function clearPlayers() {
+    actions.clearPlayers();
   }
 
   // -- Game Logic --
-  function startGame(): void {
-    setupSectionVisible = false;
-    gameSectionVisible = true;
-    finalScoresSectionVisible = false;
-    
-    // Initialize placements
-    placements = {};
-    players.forEach(p => { placements[p] = {}; });
-    
-    axes = selectRandomAxes(axisOptions);
-    
-    currentTurn = 0;
+  function startGame() {
+  actions.startGame();
+  
+  // Give the store a chance to update the UI
+  setTimeout(() => {
+    // Now that state is updated, we can set up the turn
     startPlayerTurn();
-  }
+  }, 10); // Small delay to ensure UI state has updated
+}
 
-  function startPlayerTurn(): void {
-    allPinsPlaced = false;
-    nextZIndex = 100;
+  function startPlayerTurn() {
+    // Update store state
+    gameStore.update(state => ({
+      ...state,
+      allPinsPlaced: false,
+      nextZIndex: 100
+    }));
     
+    // The rest of the function's DOM manipulation logic remains the same
     const currentPlayer = players[currentTurn];
     if (turnIndicatorElement) {
       turnIndicatorElement.textContent = `${currentPlayer}'s Turn`;
@@ -156,7 +133,7 @@
     if (pinsContainer) {
       pinsContainer.innerHTML = '';
       
-      // Create a fresh pin for each player - use the exact same approach for all players
+      // Create a fresh pin for each player
       players.forEach((player, index) => {
         // Create base element
         const pin = document.createElement('div');
@@ -180,8 +157,8 @@
         pin.style.alignItems = 'center';
         
         // Setup drag events - using direct property assignment
-        pin.onmousedown = (e) => dragStart(e as MouseEvent, pin);
-        pin.ontouchstart = (e) => touchStart(e as TouchEvent, pin);
+        pin.onmousedown = (e) => dragStart(e, pin);
+        pin.ontouchstart = (e) => touchStart(e, pin);
         pin.onclick = () => bringPinToFront(pin);
         
         // Add to container
@@ -196,7 +173,7 @@
     }, 50);
   }
 
-  function updatePinStatus(): void {
+  function updatePinStatus() {
     if (!gameSectionVisible) return;
     
     const pinElements = document.querySelectorAll('.pin');
@@ -208,19 +185,23 @@
       }
     });
     
-    allPinsPlaced = placedCount === players.length;
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      allPinsPlaced: placedCount === players.length
+    }));
   }
 
-  function confirmPlacement(): void {
-    const placement: PlayerPlacements = {};
+  function confirmPlacement() {
+    const placement = {};
     const rect = graphContainer.getBoundingClientRect();
     
     document.querySelectorAll('.pin').forEach(pin => {
       const player = pin.getAttribute('data-player');
       if (!player) return;
       
-      const leftStyle = (pin as HTMLElement).style.left;
-      const topStyle = (pin as HTMLElement).style.top;
+      const leftStyle = pin.style.left;
+      const topStyle = pin.style.top;
       
       // Convert percentage to decimal if needed
       const leftVal = leftStyle.endsWith('%') 
@@ -234,45 +215,45 @@
       placement[player] = { x: leftVal, y: topVal };
     });
     
-    placements[currentPlayer] = placement;
-    currentTurn++;
+    // Update the store
+    gameStore.update(state => {
+      const newPlacements = { ...state.placements };
+      newPlacements[currentPlayer] = placement;
+      return {
+        ...state,
+        placements: newPlacements,
+        currentTurn: state.currentTurn + 1
+      };
+    });
     
-    if (currentTurn < players.length) {
+    // Check if we need to continue or show final scores
+    if (currentTurn + 1 < players.length) {
       startPlayerTurn();
     } else {
       showFinalScores();
     }
   }
 
-  function showFinalScores(): void {
-    gameSectionVisible = false;
-    finalScoresSectionVisible = true;
-    selectedFilter = 'all';
+  function showFinalScores() {
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      gameSectionVisible: false,
+      finalScoresSectionVisible: true,
+      selectedFilter: 'all'
+    }));
     
     setTimeout(() => {
       createCollectivePlacementsChart();
     }, 0);
   }
 
-  function resetGame(): void {
-    players = [];
-    currentTurn = 0;
-    placements = {};
-    selectedFilter = 'all';
-    nextZIndex = 100;
-    allPinsPlaced = false;
-    
-    setupSectionVisible = true;
-    gameSectionVisible = false;
-    finalScoresSectionVisible = false;
-    
-    playerNameInput = '';
-    
-    axes = selectRandomAxes(axisOptions);
+  function resetGame() {
+    actions.resetGame();
   }
 
   // -- Drag Functionality --
-  function dragStart(e: MouseEvent, pin: HTMLElement): void {
+  function dragStart(e, pin) {
     e.preventDefault();
     activeDragPin = pin;
     bringPinToFront(pin);
@@ -302,7 +283,7 @@
     document.addEventListener('mouseup', dragEnd);
   }
 
-  function dragMove(e: MouseEvent): void {
+  function dragMove(e) {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -323,7 +304,7 @@
     activeDragPin.style.top = newY + 'px';
   }
 
-  function dragEnd(): void {
+  function dragEnd() {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -346,7 +327,7 @@
   }
 
   // Touch handlers
-  function touchStart(e: TouchEvent, pin: HTMLElement): void {
+  function touchStart(e, pin) {
     if (e.touches.length !== 1) return;
     e.preventDefault();
     activeDragPin = pin;
@@ -376,7 +357,7 @@
     document.addEventListener('touchend', touchEnd);
   }
 
-  function touchMove(e: TouchEvent): void {
+  function touchMove(e) {
     e.preventDefault();
     if (!activeDragPin || e.touches.length !== 1) return;
     
@@ -398,7 +379,7 @@
     activeDragPin.style.top = newY + 'px';
   }
 
-  function touchEnd(): void {
+  function touchEnd() {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -420,13 +401,19 @@
     document.removeEventListener('touchend', touchEnd);
   }
 
-  function bringPinToFront(pin: HTMLElement): void {
-    nextZIndex++;
-    pin.style.zIndex = nextZIndex.toString();
+  function bringPinToFront(pin) {
+    // Update the nextZIndex in the store
+    gameStore.update(state => ({
+      ...state,
+      nextZIndex: state.nextZIndex + 1
+    }));
+    
+    // Use the updated value to set the pin's z-index
+    pin.style.zIndex = (nextZIndex + 1).toString();
   }
 
   // -- Visualization & Scoring --
-  function createPlayerFilterButtons(): void {
+  function createPlayerFilterButtons() {
     if (!playerFilterButtonsElement) return;
     
     playerFilterButtonsElement.innerHTML = '';
@@ -436,7 +423,11 @@
     allButton.className = 'player-filter-button all-button' + (selectedFilter === 'all' ? ' active' : '');
     allButton.textContent = 'All';
     allButton.onclick = () => {
-      selectedFilter = 'all';
+      // Update the store
+      gameStore.update(state => ({
+        ...state,
+        selectedFilter: 'all'
+      }));
       createCollectivePlacementsChart();
     };
     playerFilterButtonsElement.appendChild(allButton);
@@ -456,7 +447,11 @@
       }
       
       btn.onclick = () => {
-        selectedFilter = p;
+        // Update the store
+        gameStore.update(state => ({
+          ...state,
+          selectedFilter: p
+        }));
         createCollectivePlacementsChart();
       };
       
@@ -464,11 +459,16 @@
     });
   }
 
-  function createCollectivePlacementsChart(): void {
+  function createCollectivePlacementsChart() {
     if (!collectivePlacementsContainerElement) return;
     
     collectivePlacementsContainerElement.innerHTML = '';
-    nextZIndex = 100;
+    
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      nextZIndex: 100
+    }));
     
     createPlayerFilterButtons();
     
@@ -584,7 +584,7 @@
           pin.style.justifyContent = 'center';
           pin.style.alignItems = 'center';
           pin.style.margin = '0';
-          pin.addEventListener('click', () => bringPinToFront(pin as HTMLElement));
+          pin.addEventListener('click', () => bringPinToFront(pin));
           chartContainer.appendChild(pin);
         });
         return;
@@ -631,7 +631,7 @@
           pin.style.transform = 'translate(-50%, -50%) scale(0.8)';
         }
         
-        pin.addEventListener('click', () => bringPinToFront(pin as HTMLElement));
+        pin.addEventListener('click', () => bringPinToFront(pin));
         chartContainer.appendChild(pin);
       });
     });
@@ -664,7 +664,7 @@
         scoreboardTitle.style.color = '#4c2c69';
         scoreboardContainer.appendChild(scoreboardTitle);
         
-        const playerScores: PlayerScore[] = [];
+        const playerScores = [];
         players.forEach(pl => {
           if (pl === sp) return;
           
@@ -722,8 +722,8 @@
     }
   }
 
-  function calculateFinalScores(): Record<string, number> {
-    const scores: Record<string, number> = {};
+  function calculateFinalScores() {
+    const scores = {};
     players.forEach(p => scores[p] = 0);
     
     players.forEach(person => {
@@ -752,7 +752,7 @@
     return scores;
   }
 
-  function handleKeyDown(e: KeyboardEvent): void {
+  function handleKeyDown(e) {
     if (e.key === 'Enter') {
       addPlayer();
     }
@@ -1450,4 +1450,4 @@
       </div>
     </div>
   {/if}
-</div> 
+</div>
