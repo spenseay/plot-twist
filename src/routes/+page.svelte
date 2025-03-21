@@ -1,5 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { axisOptions } from '../lib/data/axisOptions.js';
+  import { getContrastYIQ } from '$lib/utils/colorUtils.js';
+  import { calculateDistance } from '$lib/utils/mathUtils.js';
+  import { adjustYAxisArrow, adjustYAxisArrowForChart, selectRandomAxes } from '$lib/utils/axisUtils.js';
 
   // Type definitions
   interface AxisDef {
@@ -62,111 +66,6 @@
     '#c0e2bc'
   ];
 
-  // Example axis options
-  const axisOptions: AxisDef[] = [
-    { start: "High Five", end: "Fist Bump" },
-    { start: "Couch Potato", end: "Touches Grass" },
-    { start: "Lights Candles", end: "Lights Bonfires" },
-    { start: "Silent Sneezer", end: "Powerful Sneezer" },
-    { start: "Napkin User", end: "Sleeve Wiper" },
-    { start: "Shower Singer", end: "Shower Thinker" },
-    { start: "Spider Saver", end: "Spider Squisher" },
-    { start: "Movie Talker", end: "Shusher" },
-    { start: "Sock Shoe Sock Shoe", end: "Sock Sock Shoe Shoe" },
-    { start: "Bookworm", end: "Illiterate" },
-    { start: "Sells feet pics", end: "Buys feet pics" },
-    { start: "Predator", end: "Prey" },
-    { start: "Sugar Baby", end: "Sugar Daddy" },
-    { start: "Mountains", end: "Beach" },
-    { start: "Early Bird", end: "The Worm" },
-    { start: "Left on read", end: "Leaving Others On Read" },
-    { start: "Toilet Paper Folder", end: "Toilet Paper Crumbler" },
-    { start: "Window Seat", end: "Aisle Seat" },
-    { start: "One Tab Open", end: "100 Tabs Open" },
-    { start: "Instruction Reader", end: "Wings It" },
-    { start: "Menu Studier", end: "Panic Orderer" },
-    { start: "Punctual", end: "Fashionably Late" },
-    { start: "Single Alarm", end: "Snooze Abuser" },
-    { start: "Screenager", end: "Digital Detox" },
-    { start: "Cereal First", end: "Milk First" },
-    { start: "Boundary Setter", end: "Pushover" },
-    { start: "Conflict Avoidant", end: "Conflict Causer" },
-    { start: "Review Reader", end: "Impulse Buyer" },
-    { start: "Full Tank", end: "Rides on Empty" },
-    { start: "Matching Sock Seeker", end: "Any Two Will Do" },
-    { start: "Hard G in GIF", end: "Soft G in GIF" },
-    { start: "Tea Spiller", end: "Tea Drinker" },
-    { start: "Slow Eater", end: "Speed Inhaler" },
-    { start: "Fork and Knife Pizza", end: "Folded Slice" },
-    { start: "Umbrella Owner", end: "Soaked And Unprepared" },
-    { start: "Subtitles On", end: "Subtitles Off" },
-    { start: "Socks in Bed", end: "Barefoot Sleeper" },
-    { start: "Minimalist", end: "Maximalist" },
-    { start: "QWERTY Expert", end: "Touch Typer" },
-    { start: "Socks in Bed", end: "Barefoot Sleeper" },
-    { start: "Four Suitcases", end: "Just A Backpack" },
-    { start: "Front Row Sitter", end: "Back Row Hider" },
-    { start: "Tailgater", end: "Defensive Driver" },
-    { start: "Installs Updates", end: "'Remind Me Later'" },
-    { start: "Asks for Directions", end: "Drives in Circles" },
-    { start: "Natural Navigator", end: "Makes L with Fingers" },
-    { start: "Hairless", end: "Hairy" },
-    { start: "Hero", end: "Villain" },
-    { start: "Inflexible", end: "Flexible" },
-    { start: "Risk Averse", end: "Adrenaline Junkie" },
-    { start: "Dog Person", end: "Cat Person" },
-    { start: "Mint Chip", end: "Cookie Dough" },
-    { start: "Serial Procrastinator", end: "Planner" },
-    { start: "Toilet Paper Over", end: "Toilet Paper Under" },
-    { start: "Playlist Curator", end: "Just Presses Shuffle" },
-    { start: "Movie Crier", end: "Emotional Fortress" },
-    { start: "Inbox Zero", end: "10,000 Unread Emails" },
-    { start: "Birthday Rememberer", end: "Facebook Birthday Reliant" },
-    { start: "Runway Model", end: "Gets Dressed In The Dark" },
-    { start: "Washes Pants After 1 Wear", end: "Washes Pants After 4 Wears" },
-    { start: "Separates Laundry By Color", end: "Everything In One Load" },
-    { start: "Orders Water", end: "Orders Shirley Temple" },
-    { start: "Would Fight A Goose", end: "Would Befriend A Goose" },
-    { start: "Eats Kiwi With The Skin", end: "Meticulously Peels Kiwi" },
-    { start: "Enters Pool Slowly", end: "Dives In The Deep End" },
-    { start: "Collects Hotel Soaps", end: "Brings Own Toiletries" },
-    { start: "Befriends Neighborhood Squirrels", end: "Has Squirrel Nemesis" },
-    { start: "Doomsday Prepper", end: "Lives In The Moment" },
-    { start: "Memorized Pi To 100 Digits", end: "Thinks Pi ≈ 3" },
-    { start: "Takes Scenic Route", end: "Takes Fastest Route" },
-    { start: "Wants To Be Cryogenically Frozen", end: "Wants Natural Burial" },
-    { start: "Has A Favorite Font", end: "Uses Arial" },
-    { start: "We Live In A Simulation", end: "We Are The Center Of The Universe" },
-    { start: "AI Is Overhyped", end: "AI Is The Future" },
-    { start: "Amish", end: "Scientologist" },
-    { start: "Driver", end: "Passenger Princess" },
-    { start: "Warm Hugger", end: "Side Hugger" },
-    { start: "Guards Fries", end: "Shares Fries" },
-    { start: "Picture Taker", end: "Memory Maker" },
-    { start: "Air Drummer", end: "Head Bobber" },
-    { start: "Moon Howler", end: "Star Gazer" },
-    { start: "Beach Lounger", end: "Ocean Swimmer" },
-    { start: "Stealth Fart", end: "Loud And Proud" },
-    { start: "Bubble Popper", end: "Bubble Blower" },
-    { start: "Jacket In Summer", end: "Shorts In Winter" },
-    { start: "Buys Extended Warranty", end: "Lives Dangerously" },
-    { start: "Pineapple Pizza Lover", end: "Pizza Purist" },
-    { start: "Sushi With Chopsticks", end: "Sushi With Fork" },
-    { start: "Sunrise", end: "Sunset" },
-    { start: "Karma Believer", end: "Coincidence Observer" },
-    { start: "Public Restroom Hoverer", end: "Sits Right Down" },
-    { start: "Would Clone Self", end: "Fears Clone Army" },
-    { start: "Overshares", end: "Emotionally Unavailable" },
-    { start: "Saves For Retirement", end: "Lives For Today" },
-    { start: "Actions Reveal Character", end: "Words Define Us" },
-    { start: "Money Can't Buy Happiness", end: "Money Can Buy Happiness" },
-    { start: "Success Requires Sacrifice", end: "Balance Is Success" },
-    { start: "Tells White Lies", end: "Brutal Honesty Always" },
-    { start: "Health Is Wealth", end: "Wealth Is Wealth" },
-    { start: "Would Choose Knowledge", end: "Would Choose Happiness" },
-    { start: "Power Walker", end: "Stroller" }
-  ];
-
   // DOM references
   let graphContainer: HTMLDivElement;
   let pinsContainer: HTMLDivElement;
@@ -187,73 +86,17 @@
   $: if (gameSectionVisible) {
     // This reactive statement ensures the Y-axis is adjusted whenever game section becomes visible
     setTimeout(() => {
-      adjustYAxisArrow();
+      adjustYAxisArrow(graphContainer);
       // First player turn might need an extra adjustment
       if (currentTurn === 0) {
-        setTimeout(adjustYAxisArrow, 100);
+        setTimeout(() => adjustYAxisArrow(graphContainer), 100);
       }
     }, 0);
   }
 
   onMount(() => {
-    selectRandomAxes();
+    axes = selectRandomAxes(axisOptions);
   });
-
-  function selectRandomAxes(): Axes {
-    // Create a copy of axis options and shuffle it
-    let arr = [...axisOptions];
-    const shuffled = [...arr].map(() => {
-      const j = Math.floor(Math.random() * arr.length);
-      return arr.splice(j, 1)[0];
-    });
-    
-    // Pick the first two for X and Y
-    const xAxis = shuffled[0];
-    const yAxis = shuffled[1] || shuffled[0]; // Fallback if we only have one option
-    
-    // Set the axes
-    axes = {
-      x: {
-        ...xAxis
-      },
-      y: {
-        ...yAxis
-      }
-    };
-    
-    console.log("Axes randomized:", axes);
-    return axes;
-  }
-
-  function adjustYAxisArrow(): void {
-    if (!graphContainer) return;
-    
-    const yAxisEndLabel = graphContainer.querySelector('.y-axis-end');
-    const yAxisStartLabel = graphContainer.querySelector('.y-axis-start');
-    const yAxisArrow = graphContainer.querySelector('.y-axis-arrow');
-    
-    if (!yAxisEndLabel || !yAxisStartLabel || !yAxisArrow) {
-      console.log("Missing elements for Y-axis adjustment");
-      return;
-    }
-
-    const margin = 5; // extra spacing so arrow doesn't overlap text
-    const containerRect = graphContainer.getBoundingClientRect();
-    const endRect = yAxisEndLabel.getBoundingClientRect();
-    const startRect = yAxisStartLabel.getBoundingClientRect();
-
-    // Distance from container's top to bottom of top label
-    const arrowTop = (endRect.bottom - containerRect.top) + margin;
-
-    // Distance from container's bottom to top of bottom label
-    const arrowBottom = (containerRect.bottom - startRect.top) + margin;
-
-    console.log("Y-Axis adjustment:", { arrowTop, arrowBottom });
-
-    // Set arrow line - cast to HTMLElement to ensure TypeScript knows these properties exist
-    (yAxisArrow as HTMLElement).style.top = arrowTop + 'px';
-    (yAxisArrow as HTMLElement).style.bottom = arrowBottom + 'px';
-  }
 
   // -- Player Management --
   function addPlayer(): void {
@@ -288,7 +131,7 @@
     placements = {};
     players.forEach(p => { placements[p] = {}; });
     
-    selectRandomAxes();
+    axes = selectRandomAxes(axisOptions);
     
     currentTurn = 0;
     startPlayerTurn();
@@ -349,7 +192,7 @@
     // Ensure styles are applied and layout is calculated
     setTimeout(() => {
       updatePinStatus();
-      adjustYAxisArrow();
+      adjustYAxisArrow(graphContainer);
     }, 50);
   }
 
@@ -425,7 +268,7 @@
     
     playerNameInput = '';
     
-    selectRandomAxes();
+    axes = selectRandomAxes(axisOptions);
   }
 
   // -- Drag Functionality --
@@ -879,25 +722,6 @@
     }
   }
 
-  function adjustYAxisArrowForChart(container: HTMLElement): void {
-    const yAxisEndLabel = container.querySelector('.y-axis-end');
-    const yAxisStartLabel = container.querySelector('.y-axis-start');
-    const yAxisArrow = container.querySelector('.y-axis-arrow');
-    
-    if (!yAxisEndLabel || !yAxisStartLabel || !yAxisArrow) return;
-    
-    const margin = 5;
-    const containerRect = container.getBoundingClientRect();
-    const endRect = yAxisEndLabel.getBoundingClientRect();
-    const startRect = yAxisStartLabel.getBoundingClientRect();
-    
-    const arrowTop = (endRect.bottom - containerRect.top) + margin;
-    const arrowBottom = (containerRect.bottom - startRect.top) + margin;
-    
-    (yAxisArrow as HTMLElement).style.top = arrowTop + 'px';
-    (yAxisArrow as HTMLElement).style.bottom = arrowBottom + 'px';
-  }
-
   function calculateFinalScores(): Record<string, number> {
     const scores: Record<string, number> = {};
     players.forEach(p => scores[p] = 0);
@@ -926,21 +750,6 @@
     });
     
     return scores;
-  }
-
-  // -- Helper Functions --
-  function calculateDistance(a: Coordinate, b: Coordinate): number {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  function getContrastYIQ(hexcolor: string): number {
-    if (hexcolor.charAt(0) === '#') hexcolor = hexcolor.substr(1);
-    const r = parseInt(hexcolor.substr(0, 2), 16);
-    const g = parseInt(hexcolor.substr(2, 2), 16);
-    const b = parseInt(hexcolor.substr(4, 2), 16);
-    return ((r * 299) + (g * 587) + (b * 114)) / 1000;
   }
 
   function handleKeyDown(e: KeyboardEvent): void {
