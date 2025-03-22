@@ -215,6 +215,9 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
       placement[player] = { x: leftVal, y: topVal };
     });
     
+    // Determine if this is the last turn BEFORE updating the store
+    const isLastTurn = currentTurn + 1 >= players.length;
+    
     // Update the store
     gameStore.update(state => {
       const newPlacements = { ...state.placements };
@@ -226,11 +229,12 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
       };
     });
     
-    // Check if we need to continue or show final scores
-    if (currentTurn + 1 < players.length) {
-      startPlayerTurn();
-    } else {
+    // Use the pre-determined flag to decide what to do next
+    if (isLastTurn) {
       showFinalScores();
+    } else {
+      // Add a small delay to ensure the store has updated
+      setTimeout(startPlayerTurn, 10);
     }
   }
 
