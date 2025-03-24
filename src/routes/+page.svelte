@@ -1,56 +1,33 @@
-<script lang="ts">
+<script>
   import { onMount } from 'svelte';
+  import { axisOptions } from '../lib/data/axisOptions.js';
+  import { getContrastYIQ } from '$lib/utils/colorUtils.js';
+  import { calculateDistance } from '$lib/utils/mathUtils.js';
+  import { adjustYAxisArrow, adjustYAxisArrowForChart, selectRandomAxes } from '$lib/utils/axisUtils.js';
+  import gameStore, { actions } from '$lib/stores/gameStore.js';
 
-  // Type definitions
-  interface AxisDef {
-    start: string;
-    end: string;
-  }
+  // Subscribe to the game store
+  import { get } from 'svelte/store';
 
-  interface Axes {
-    x: AxisDef;
-    y: AxisDef;
-  }
+// Use the $ syntax for auto-subscription
+$: gameState = $gameStore;
+$: players = gameState?.players || [];
+$: currentTurn = gameState?.currentTurn || 0;
+$: placements = gameState?.placements || {};
+$: selectedFilter = gameState?.selectedFilter || 'all';
+$: setupSectionVisible = gameState?.setupSectionVisible ?? true;
+$: gameSectionVisible = gameState?.gameSectionVisible ?? false;
+$: finalScoresSectionVisible = gameState?.finalScoresSectionVisible ?? false;
+$: nextZIndex = gameState?.nextZIndex || 100;
+$: allPinsPlaced = gameState?.allPinsPlaced || false;
+$: playerNameInput = gameState?.playerNameInput || '';
+$: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "" } };
 
-  interface Coordinate {
-    x: number;
-    y: number;
-  }
+  // Active drag pin is still managed locally (not in store)
+  let activeDragPin = null;
 
-  interface PlayerPlacements {
-    [player: string]: Coordinate;
-  }
-
-  interface AllPlacements {
-    [placer: string]: PlayerPlacements;
-  }
-
-  interface PlayerScore {
-    player: string;
-    score: number;
-  }
-
-  // -- Game State --
-  let players: string[] = [];
-  let currentTurn: number = 0;
-  let placements: AllPlacements = {};
-  let selectedFilter: string = 'all';
-  let setupSectionVisible: boolean = true;
-  let gameSectionVisible: boolean = false;
-  let finalScoresSectionVisible: boolean = false;
-  let nextZIndex: number = 100;
-  let allPinsPlaced: boolean = false;
-  let activeDragPin: HTMLElement | null = null;
-  let playerNameInput: string = '';
-  
-  // Graph axis state
-  let axes: Axes = {
-    x: { start: "", end: "" },
-    y: { start: "", end: "" }
-  };
-
-  // Color palette
-  const playerColors: string[] = [
+  // Color palette (doesn't need to be in the store)
+  const playerColors = [
     '#db5461',
     '#3891a6',
     '#fdc30f',
@@ -62,119 +39,14 @@
     '#c0e2bc'
   ];
 
-  // Example axis options
-  const axisOptions: AxisDef[] = [
-    { start: "High Five", end: "Fist Bump" },
-    { start: "Couch Potato", end: "Touches Grass" },
-    { start: "Lights Candles", end: "Lights Bonfires" },
-    { start: "Silent Sneezer", end: "Powerful Sneezer" },
-    { start: "Napkin User", end: "Sleeve Wiper" },
-    { start: "Shower Singer", end: "Shower Thinker" },
-    { start: "Spider Saver", end: "Spider Squisher" },
-    { start: "Movie Talker", end: "Shusher" },
-    { start: "Sock Shoe Sock Shoe", end: "Sock Sock Shoe Shoe" },
-    { start: "Bookworm", end: "Illiterate" },
-    { start: "Sells feet pics", end: "Buys feet pics" },
-    { start: "Predator", end: "Prey" },
-    { start: "Sugar Baby", end: "Sugar Daddy" },
-    { start: "Mountains", end: "Beach" },
-    { start: "Early Bird", end: "The Worm" },
-    { start: "Left on read", end: "Leaving Others On Read" },
-    { start: "Toilet Paper Folder", end: "Toilet Paper Crumbler" },
-    { start: "Window Seat", end: "Aisle Seat" },
-    { start: "One Tab Open", end: "100 Tabs Open" },
-    { start: "Instruction Reader", end: "Wings It" },
-    { start: "Menu Studier", end: "Panic Orderer" },
-    { start: "Punctual", end: "Fashionably Late" },
-    { start: "Single Alarm", end: "Snooze Abuser" },
-    { start: "Screenager", end: "Digital Detox" },
-    { start: "Cereal First", end: "Milk First" },
-    { start: "Boundary Setter", end: "Pushover" },
-    { start: "Conflict Avoidant", end: "Conflict Causer" },
-    { start: "Review Reader", end: "Impulse Buyer" },
-    { start: "Full Tank", end: "Rides on Empty" },
-    { start: "Matching Sock Seeker", end: "Any Two Will Do" },
-    { start: "Hard G in GIF", end: "Soft G in GIF" },
-    { start: "Tea Spiller", end: "Tea Drinker" },
-    { start: "Slow Eater", end: "Speed Inhaler" },
-    { start: "Fork and Knife Pizza", end: "Folded Slice" },
-    { start: "Umbrella Owner", end: "Soaked And Unprepared" },
-    { start: "Subtitles On", end: "Subtitles Off" },
-    { start: "Socks in Bed", end: "Barefoot Sleeper" },
-    { start: "Minimalist", end: "Maximalist" },
-    { start: "QWERTY Expert", end: "Touch Typer" },
-    { start: "Socks in Bed", end: "Barefoot Sleeper" },
-    { start: "Four Suitcases", end: "Just A Backpack" },
-    { start: "Front Row Sitter", end: "Back Row Hider" },
-    { start: "Tailgater", end: "Defensive Driver" },
-    { start: "Installs Updates", end: "'Remind Me Later'" },
-    { start: "Asks for Directions", end: "Drives in Circles" },
-    { start: "Natural Navigator", end: "Makes L with Fingers" },
-    { start: "Hairless", end: "Hairy" },
-    { start: "Hero", end: "Villain" },
-    { start: "Inflexible", end: "Flexible" },
-    { start: "Risk Averse", end: "Adrenaline Junkie" },
-    { start: "Dog Person", end: "Cat Person" },
-    { start: "Mint Chip", end: "Cookie Dough" },
-    { start: "Serial Procrastinator", end: "Planner" },
-    { start: "Toilet Paper Over", end: "Toilet Paper Under" },
-    { start: "Playlist Curator", end: "Just Presses Shuffle" },
-    { start: "Movie Crier", end: "Emotional Fortress" },
-    { start: "Inbox Zero", end: "10,000 Unread Emails" },
-    { start: "Birthday Rememberer", end: "Facebook Birthday Reliant" },
-    { start: "Runway Model", end: "Gets Dressed In The Dark" },
-    { start: "Washes Pants After 1 Wear", end: "Washes Pants After 4 Wears" },
-    { start: "Separates Laundry By Color", end: "Everything In One Load" },
-    { start: "Orders Water", end: "Orders Shirley Temple" },
-    { start: "Would Fight A Goose", end: "Would Befriend A Goose" },
-    { start: "Eats Kiwi With The Skin", end: "Meticulously Peels Kiwi" },
-    { start: "Enters Pool Slowly", end: "Dives In The Deep End" },
-    { start: "Collects Hotel Soaps", end: "Brings Own Toiletries" },
-    { start: "Befriends Neighborhood Squirrels", end: "Has Squirrel Nemesis" },
-    { start: "Doomsday Prepper", end: "Lives In The Moment" },
-    { start: "Memorized Pi To 100 Digits", end: "Thinks Pi ≈ 3" },
-    { start: "Takes Scenic Route", end: "Takes Fastest Route" },
-    { start: "Wants To Be Cryogenically Frozen", end: "Wants Natural Burial" },
-    { start: "Has A Favorite Font", end: "Uses Arial" },
-    { start: "We Live In A Simulation", end: "We Are The Center Of The Universe" },
-    { start: "AI Is Overhyped", end: "AI Is The Future" },
-    { start: "Amish", end: "Scientologist" },
-    { start: "Driver", end: "Passenger Princess" },
-    { start: "Warm Hugger", end: "Side Hugger" },
-    { start: "Guards Fries", end: "Shares Fries" },
-    { start: "Picture Taker", end: "Memory Maker" },
-    { start: "Air Drummer", end: "Head Bobber" },
-    { start: "Moon Howler", end: "Star Gazer" },
-    { start: "Beach Lounger", end: "Ocean Swimmer" },
-    { start: "Stealth Fart", end: "Loud And Proud" },
-    { start: "Bubble Popper", end: "Bubble Blower" },
-    { start: "Jacket In Summer", end: "Shorts In Winter" },
-    { start: "Buys Extended Warranty", end: "Lives Dangerously" },
-    { start: "Pineapple Pizza Lover", end: "Pizza Purist" },
-    { start: "Sushi With Chopsticks", end: "Sushi With Fork" },
-    { start: "Sunrise", end: "Sunset" },
-    { start: "Karma Believer", end: "Coincidence Observer" },
-    { start: "Public Restroom Hoverer", end: "Sits Right Down" },
-    { start: "Would Clone Self", end: "Fears Clone Army" },
-    { start: "Overshares", end: "Emotionally Unavailable" },
-    { start: "Saves For Retirement", end: "Lives For Today" },
-    { start: "Actions Reveal Character", end: "Words Define Us" },
-    { start: "Money Can't Buy Happiness", end: "Money Can Buy Happiness" },
-    { start: "Success Requires Sacrifice", end: "Balance Is Success" },
-    { start: "Tells White Lies", end: "Brutal Honesty Always" },
-    { start: "Health Is Wealth", end: "Wealth Is Wealth" },
-    { start: "Would Choose Knowledge", end: "Would Choose Happiness" },
-    { start: "Power Walker", end: "Stroller" }
-  ];
-
   // DOM references
-  let graphContainer: HTMLDivElement;
-  let pinsContainer: HTMLDivElement;
-  let turnIndicatorElement: HTMLDivElement;
-  let pinsStatusElement: HTMLDivElement;
-  let finalScoresTableElement: HTMLDivElement;
-  let playerFilterButtonsElement: HTMLDivElement;
-  let collectivePlacementsContainerElement: HTMLDivElement;
+  let graphContainer;
+  let pinsContainer;
+  let turnIndicatorElement;
+  let pinsStatusElement;
+  let finalScoresTableElement;
+  let playerFilterButtonsElement;
+  let collectivePlacementsContainerElement;
 
   // Reactive declarations
   $: startGameDisabled = players.length < 2;
@@ -187,76 +59,23 @@
   $: if (gameSectionVisible) {
     // This reactive statement ensures the Y-axis is adjusted whenever game section becomes visible
     setTimeout(() => {
-      adjustYAxisArrow();
+      adjustYAxisArrow(graphContainer);
       // First player turn might need an extra adjustment
       if (currentTurn === 0) {
-        setTimeout(adjustYAxisArrow, 100);
+        setTimeout(() => adjustYAxisArrow(graphContainer), 100);
       }
     }, 0);
   }
 
   onMount(() => {
-    selectRandomAxes();
+    gameStore.update(state => ({
+      ...state,
+      axes: selectRandomAxes(axisOptions)
+    }));
   });
 
-  function selectRandomAxes(): Axes {
-    // Create a copy of axis options and shuffle it
-    let arr = [...axisOptions];
-    const shuffled = [...arr].map(() => {
-      const j = Math.floor(Math.random() * arr.length);
-      return arr.splice(j, 1)[0];
-    });
-    
-    // Pick the first two for X and Y
-    const xAxis = shuffled[0];
-    const yAxis = shuffled[1] || shuffled[0]; // Fallback if we only have one option
-    
-    // Set the axes
-    axes = {
-      x: {
-        ...xAxis
-      },
-      y: {
-        ...yAxis
-      }
-    };
-    
-    console.log("Axes randomized:", axes);
-    return axes;
-  }
-
-  function adjustYAxisArrow(): void {
-    if (!graphContainer) return;
-    
-    const yAxisEndLabel = graphContainer.querySelector('.y-axis-end');
-    const yAxisStartLabel = graphContainer.querySelector('.y-axis-start');
-    const yAxisArrow = graphContainer.querySelector('.y-axis-arrow');
-    
-    if (!yAxisEndLabel || !yAxisStartLabel || !yAxisArrow) {
-      console.log("Missing elements for Y-axis adjustment");
-      return;
-    }
-
-    const margin = 5; // extra spacing so arrow doesn't overlap text
-    const containerRect = graphContainer.getBoundingClientRect();
-    const endRect = yAxisEndLabel.getBoundingClientRect();
-    const startRect = yAxisStartLabel.getBoundingClientRect();
-
-    // Distance from container's top to bottom of top label
-    const arrowTop = (endRect.bottom - containerRect.top) + margin;
-
-    // Distance from container's bottom to top of bottom label
-    const arrowBottom = (containerRect.bottom - startRect.top) + margin;
-
-    console.log("Y-Axis adjustment:", { arrowTop, arrowBottom });
-
-    // Set arrow line - cast to HTMLElement to ensure TypeScript knows these properties exist
-    (yAxisArrow as HTMLElement).style.top = arrowTop + 'px';
-    (yAxisArrow as HTMLElement).style.bottom = arrowBottom + 'px';
-  }
-
   // -- Player Management --
-  function addPlayer(): void {
+  function addPlayer() {
     const playerName = playerNameInput.trim();
     if (!playerName) {
       alert('Please enter a player name.');
@@ -266,38 +85,39 @@
       alert('This player is already added.');
       return;
     }
-    players = [...players, playerName];
-    playerNameInput = '';
+    
+    // Update through the store instead
+    actions.addPlayer(playerName);
   }
 
-  function removePlayer(index: number): void {
-    players = players.filter((_, i) => i !== index);
+  function removePlayer(index) {
+    actions.removePlayer(index);
   }
 
-  function clearPlayers(): void {
-    players = [];
+  function clearPlayers() {
+    actions.clearPlayers();
   }
 
   // -- Game Logic --
-  function startGame(): void {
-    setupSectionVisible = false;
-    gameSectionVisible = true;
-    finalScoresSectionVisible = false;
-    
-    // Initialize placements
-    placements = {};
-    players.forEach(p => { placements[p] = {}; });
-    
-    selectRandomAxes();
-    
-    currentTurn = 0;
+  function startGame() {
+  actions.startGame();
+  
+  // Give the store a chance to update the UI
+  setTimeout(() => {
+    // Now that state is updated, we can set up the turn
     startPlayerTurn();
-  }
+  }, 10); // Small delay to ensure UI state has updated
+}
 
-  function startPlayerTurn(): void {
-    allPinsPlaced = false;
-    nextZIndex = 100;
+  function startPlayerTurn() {
+    // Update store state
+    gameStore.update(state => ({
+      ...state,
+      allPinsPlaced: false,
+      nextZIndex: 100
+    }));
     
+    // The rest of the function's DOM manipulation logic remains the same
     const currentPlayer = players[currentTurn];
     if (turnIndicatorElement) {
       turnIndicatorElement.textContent = `${currentPlayer}'s Turn`;
@@ -313,7 +133,7 @@
     if (pinsContainer) {
       pinsContainer.innerHTML = '';
       
-      // Create a fresh pin for each player - use the exact same approach for all players
+      // Create a fresh pin for each player
       players.forEach((player, index) => {
         // Create base element
         const pin = document.createElement('div');
@@ -337,8 +157,8 @@
         pin.style.alignItems = 'center';
         
         // Setup drag events - using direct property assignment
-        pin.onmousedown = (e) => dragStart(e as MouseEvent, pin);
-        pin.ontouchstart = (e) => touchStart(e as TouchEvent, pin);
+        pin.onmousedown = (e) => dragStart(e, pin);
+        pin.ontouchstart = (e) => touchStart(e, pin);
         pin.onclick = () => bringPinToFront(pin);
         
         // Add to container
@@ -349,11 +169,11 @@
     // Ensure styles are applied and layout is calculated
     setTimeout(() => {
       updatePinStatus();
-      adjustYAxisArrow();
+      adjustYAxisArrow(graphContainer);
     }, 50);
   }
 
-  function updatePinStatus(): void {
+  function updatePinStatus() {
     if (!gameSectionVisible) return;
     
     const pinElements = document.querySelectorAll('.pin');
@@ -365,19 +185,23 @@
       }
     });
     
-    allPinsPlaced = placedCount === players.length;
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      allPinsPlaced: placedCount === players.length
+    }));
   }
 
-  function confirmPlacement(): void {
-    const placement: PlayerPlacements = {};
+  function confirmPlacement() {
+    const placement = {};
     const rect = graphContainer.getBoundingClientRect();
     
     document.querySelectorAll('.pin').forEach(pin => {
       const player = pin.getAttribute('data-player');
       if (!player) return;
       
-      const leftStyle = (pin as HTMLElement).style.left;
-      const topStyle = (pin as HTMLElement).style.top;
+      const leftStyle = pin.style.left;
+      const topStyle = pin.style.top;
       
       // Convert percentage to decimal if needed
       const leftVal = leftStyle.endsWith('%') 
@@ -391,45 +215,49 @@
       placement[player] = { x: leftVal, y: topVal };
     });
     
-    placements[currentPlayer] = placement;
-    currentTurn++;
+    // Determine if this is the last turn BEFORE updating the store
+    const isLastTurn = currentTurn + 1 >= players.length;
     
-    if (currentTurn < players.length) {
-      startPlayerTurn();
-    } else {
+    // Update the store
+    gameStore.update(state => {
+      const newPlacements = { ...state.placements };
+      newPlacements[currentPlayer] = placement;
+      return {
+        ...state,
+        placements: newPlacements,
+        currentTurn: state.currentTurn + 1
+      };
+    });
+    
+    // Use the pre-determined flag to decide what to do next
+    if (isLastTurn) {
       showFinalScores();
+    } else {
+      // Add a small delay to ensure the store has updated
+      setTimeout(startPlayerTurn, 10);
     }
   }
 
-  function showFinalScores(): void {
-    gameSectionVisible = false;
-    finalScoresSectionVisible = true;
-    selectedFilter = 'all';
+  function showFinalScores() {
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      gameSectionVisible: false,
+      finalScoresSectionVisible: true,
+      selectedFilter: 'all'
+    }));
     
     setTimeout(() => {
       createCollectivePlacementsChart();
     }, 0);
   }
 
-  function resetGame(): void {
-    players = [];
-    currentTurn = 0;
-    placements = {};
-    selectedFilter = 'all';
-    nextZIndex = 100;
-    allPinsPlaced = false;
-    
-    setupSectionVisible = true;
-    gameSectionVisible = false;
-    finalScoresSectionVisible = false;
-    
-    playerNameInput = '';
-    
-    selectRandomAxes();
+  function resetGame() {
+    actions.resetGame();
   }
 
   // -- Drag Functionality --
-  function dragStart(e: MouseEvent, pin: HTMLElement): void {
+  function dragStart(e, pin) {
     e.preventDefault();
     activeDragPin = pin;
     bringPinToFront(pin);
@@ -459,7 +287,7 @@
     document.addEventListener('mouseup', dragEnd);
   }
 
-  function dragMove(e: MouseEvent): void {
+  function dragMove(e) {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -480,7 +308,7 @@
     activeDragPin.style.top = newY + 'px';
   }
 
-  function dragEnd(): void {
+  function dragEnd() {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -503,7 +331,7 @@
   }
 
   // Touch handlers
-  function touchStart(e: TouchEvent, pin: HTMLElement): void {
+  function touchStart(e, pin) {
     if (e.touches.length !== 1) return;
     e.preventDefault();
     activeDragPin = pin;
@@ -533,7 +361,7 @@
     document.addEventListener('touchend', touchEnd);
   }
 
-  function touchMove(e: TouchEvent): void {
+  function touchMove(e) {
     e.preventDefault();
     if (!activeDragPin || e.touches.length !== 1) return;
     
@@ -555,7 +383,7 @@
     activeDragPin.style.top = newY + 'px';
   }
 
-  function touchEnd(): void {
+  function touchEnd() {
     if (!activeDragPin) return;
     
     const rect = graphContainer.getBoundingClientRect();
@@ -577,13 +405,19 @@
     document.removeEventListener('touchend', touchEnd);
   }
 
-  function bringPinToFront(pin: HTMLElement): void {
-    nextZIndex++;
-    pin.style.zIndex = nextZIndex.toString();
+  function bringPinToFront(pin) {
+    // Update the nextZIndex in the store
+    gameStore.update(state => ({
+      ...state,
+      nextZIndex: state.nextZIndex + 1
+    }));
+    
+    // Use the updated value to set the pin's z-index
+    pin.style.zIndex = (nextZIndex + 1).toString();
   }
 
   // -- Visualization & Scoring --
-  function createPlayerFilterButtons(): void {
+  function createPlayerFilterButtons() {
     if (!playerFilterButtonsElement) return;
     
     playerFilterButtonsElement.innerHTML = '';
@@ -593,7 +427,11 @@
     allButton.className = 'player-filter-button all-button' + (selectedFilter === 'all' ? ' active' : '');
     allButton.textContent = 'All';
     allButton.onclick = () => {
-      selectedFilter = 'all';
+      // Update the store
+      gameStore.update(state => ({
+        ...state,
+        selectedFilter: 'all'
+      }));
       createCollectivePlacementsChart();
     };
     playerFilterButtonsElement.appendChild(allButton);
@@ -613,7 +451,11 @@
       }
       
       btn.onclick = () => {
-        selectedFilter = p;
+        // Update the store
+        gameStore.update(state => ({
+          ...state,
+          selectedFilter: p
+        }));
         createCollectivePlacementsChart();
       };
       
@@ -621,11 +463,16 @@
     });
   }
 
-  function createCollectivePlacementsChart(): void {
+  function createCollectivePlacementsChart() {
     if (!collectivePlacementsContainerElement) return;
     
     collectivePlacementsContainerElement.innerHTML = '';
-    nextZIndex = 100;
+    
+    // Update the store
+    gameStore.update(state => ({
+      ...state,
+      nextZIndex: 100
+    }));
     
     createPlayerFilterButtons();
     
@@ -741,7 +588,7 @@
           pin.style.justifyContent = 'center';
           pin.style.alignItems = 'center';
           pin.style.margin = '0';
-          pin.addEventListener('click', () => bringPinToFront(pin as HTMLElement));
+          pin.addEventListener('click', () => bringPinToFront(pin));
           chartContainer.appendChild(pin);
         });
         return;
@@ -788,7 +635,7 @@
           pin.style.transform = 'translate(-50%, -50%) scale(0.8)';
         }
         
-        pin.addEventListener('click', () => bringPinToFront(pin as HTMLElement));
+        pin.addEventListener('click', () => bringPinToFront(pin));
         chartContainer.appendChild(pin);
       });
     });
@@ -821,7 +668,7 @@
         scoreboardTitle.style.color = '#4c2c69';
         scoreboardContainer.appendChild(scoreboardTitle);
         
-        const playerScores: PlayerScore[] = [];
+        const playerScores = [];
         players.forEach(pl => {
           if (pl === sp) return;
           
@@ -879,27 +726,8 @@
     }
   }
 
-  function adjustYAxisArrowForChart(container: HTMLElement): void {
-    const yAxisEndLabel = container.querySelector('.y-axis-end');
-    const yAxisStartLabel = container.querySelector('.y-axis-start');
-    const yAxisArrow = container.querySelector('.y-axis-arrow');
-    
-    if (!yAxisEndLabel || !yAxisStartLabel || !yAxisArrow) return;
-    
-    const margin = 5;
-    const containerRect = container.getBoundingClientRect();
-    const endRect = yAxisEndLabel.getBoundingClientRect();
-    const startRect = yAxisStartLabel.getBoundingClientRect();
-    
-    const arrowTop = (endRect.bottom - containerRect.top) + margin;
-    const arrowBottom = (containerRect.bottom - startRect.top) + margin;
-    
-    (yAxisArrow as HTMLElement).style.top = arrowTop + 'px';
-    (yAxisArrow as HTMLElement).style.bottom = arrowBottom + 'px';
-  }
-
-  function calculateFinalScores(): Record<string, number> {
-    const scores: Record<string, number> = {};
+  function calculateFinalScores() {
+    const scores = {};
     players.forEach(p => scores[p] = 0);
     
     players.forEach(person => {
@@ -928,22 +756,7 @@
     return scores;
   }
 
-  // -- Helper Functions --
-  function calculateDistance(a: Coordinate, b: Coordinate): number {
-    const dx = a.x - b.x;
-    const dy = a.y - b.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  function getContrastYIQ(hexcolor: string): number {
-    if (hexcolor.charAt(0) === '#') hexcolor = hexcolor.substr(1);
-    const r = parseInt(hexcolor.substr(0, 2), 16);
-    const g = parseInt(hexcolor.substr(2, 2), 16);
-    const b = parseInt(hexcolor.substr(4, 2), 16);
-    return ((r * 299) + (g * 587) + (b * 114)) / 1000;
-  }
-
-  function handleKeyDown(e: KeyboardEvent): void {
+  function handleKeyDown(e) {
     if (e.key === 'Enter') {
       addPlayer();
     }
@@ -1641,4 +1454,4 @@
       </div>
     </div>
   {/if}
-</div> 
+</div>
