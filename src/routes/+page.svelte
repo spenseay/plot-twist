@@ -100,14 +100,14 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
 
   // -- Game Logic --
   function startGame() {
-  actions.startGame();
-  
-  // Give the store a chance to update the UI
-  setTimeout(() => {
-    // Now that state is updated, we can set up the turn
-    startPlayerTurn();
-  }, 10); // Small delay to ensure UI state has updated
-}
+    actions.startGame();
+    
+    // Give the store a chance to update the UI
+    setTimeout(() => {
+      // Now that state is updated, we can set up the turn
+      startPlayerTurn();
+    }, 10); // Small delay to ensure UI state has updated
+  }
 
   function startPlayerTurn() {
     // Update store state
@@ -417,6 +417,7 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
   }
 
   // -- Visualization & Scoring --
+  // FIXED FUNCTION: Updated to avoid race condition with state updates
   function createPlayerFilterButtons() {
     if (!playerFilterButtonsElement) return;
     
@@ -432,7 +433,13 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
         ...state,
         selectedFilter: 'all'
       }));
-      createCollectivePlacementsChart();
+      
+      // Use setTimeout to ensure this runs after the store update is processed
+      setTimeout(() => {
+        // Get the latest state directly from the store
+        const currentState = get(gameStore);
+        createCollectivePlacementsChart(currentState.selectedFilter);
+      }, 0);
     };
     playerFilterButtonsElement.appendChild(allButton);
     
@@ -456,17 +463,27 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
           ...state,
           selectedFilter: p
         }));
-        createCollectivePlacementsChart();
+        
+        // Use setTimeout to ensure this runs after the store update is processed
+        setTimeout(() => {
+          // Get the latest state directly from the store
+          const currentState = get(gameStore);
+          createCollectivePlacementsChart(currentState.selectedFilter);
+        }, 0);
       };
       
       playerFilterButtonsElement.appendChild(btn);
     });
   }
 
-  function createCollectivePlacementsChart() {
+  // FIXED FUNCTION: Updated to accept a filter parameter
+  function createCollectivePlacementsChart(filterOverride = null) {
     if (!collectivePlacementsContainerElement) return;
     
     collectivePlacementsContainerElement.innerHTML = '';
+    
+    // Use the parameter if provided, otherwise fall back to the reactive variable
+    const filterToUse = filterOverride !== null ? filterOverride : selectedFilter;
     
     // Update the store
     gameStore.update(state => ({
@@ -555,8 +572,9 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     collectivePlacementsContainerElement.appendChild(chartContainer);
     
     // Show pins
-    const isFiltering = (selectedFilter !== 'all');
-    const selectedP = isFiltering ? selectedFilter : null;
+    // Use filterToUse instead of selectedFilter
+    const isFiltering = (filterToUse !== 'all');
+    const selectedP = isFiltering ? filterToUse : null;
     
     players.forEach((person, pIdx) => {
       const personColor = playerColors[pIdx % playerColors.length];
@@ -647,7 +665,7 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     
     // If filtering by a specific player, show a scoreboard
     if (isFiltering) {
-      const sp = selectedFilter;
+      const sp = filterToUse; // Use filterToUse instead of selectedFilter
       const spData = placements[sp];
       if (!spData) return;
       
