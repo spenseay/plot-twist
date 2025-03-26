@@ -1,5 +1,7 @@
 <script>
   import { onMount } from 'svelte';
+  import SetupSection from '$lib/components/SetupSection.svelte';
+  import GameSection from '$lib/components/GameSection.svelte';
   import { axisOptions } from '../lib/data/axisOptions.js';
   import { getContrastYIQ } from '$lib/utils/colorUtils.js';
   import { calculateDistance } from '$lib/utils/mathUtils.js';
@@ -9,24 +11,19 @@
   // Subscribe to the game store
   import { get } from 'svelte/store';
 
-// Use the $ syntax for auto-subscription
-$: gameState = $gameStore;
-$: players = gameState?.players || [];
-$: currentTurn = gameState?.currentTurn || 0;
-$: placements = gameState?.placements || {};
-$: selectedFilter = gameState?.selectedFilter || 'all';
-$: setupSectionVisible = gameState?.setupSectionVisible ?? true;
-$: gameSectionVisible = gameState?.gameSectionVisible ?? false;
-$: finalScoresSectionVisible = gameState?.finalScoresSectionVisible ?? false;
-$: nextZIndex = gameState?.nextZIndex || 100;
-$: allPinsPlaced = gameState?.allPinsPlaced || false;
-$: playerNameInput = gameState?.playerNameInput || '';
-$: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "" } };
+  // Use the $ syntax for auto-subscription
+  $: gameState = $gameStore;
+  $: players = gameState?.players || [];
+  $: currentTurn = gameState?.currentTurn || 0;
+  $: placements = gameState?.placements || {};
+  $: selectedFilter = gameState?.selectedFilter || 'all';
+  $: setupSectionVisible = gameState?.setupSectionVisible ?? true;
+  $: gameSectionVisible = gameState?.gameSectionVisible ?? false;
+  $: finalScoresSectionVisible = gameState?.finalScoresSectionVisible ?? false;
+  $: nextZIndex = gameState?.nextZIndex || 100;
+  $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "" } };
 
-  // Active drag pin is still managed locally (not in store)
-  let activeDragPin = null;
-
-  // Color palette (doesn't need to be in the store)
+  // Color palette for pins
   const playerColors = [
     '#db5461',
     '#3891a6',
@@ -40,32 +37,9 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
   ];
 
   // DOM references
-  let graphContainer;
-  let pinsContainer;
-  let turnIndicatorElement;
-  let pinsStatusElement;
   let finalScoresTableElement;
   let playerFilterButtonsElement;
   let collectivePlacementsContainerElement;
-
-  // Reactive declarations
-  $: startGameDisabled = players.length < 2;
-  $: confirmPlacementDisabled = !allPinsPlaced;
-  $: currentPlayer = players[currentTurn] || '';
-  $: pinsStatusText = allPinsPlaced 
-    ? 'All pins placed! You can now confirm.' 
-    : 'Waiting for all pins to be placed on the chart...';
-  $: pinsStatusClass = allPinsPlaced ? 'pins-status all-placed' : 'pins-status';
-  $: if (gameSectionVisible) {
-    // This reactive statement ensures the Y-axis is adjusted whenever game section becomes visible
-    setTimeout(() => {
-      adjustYAxisArrow(graphContainer);
-      // First player turn might need an extra adjustment
-      if (currentTurn === 0) {
-        setTimeout(() => adjustYAxisArrow(graphContainer), 100);
-      }
-    }, 0);
-  }
 
   onMount(() => {
     gameStore.update(state => ({
@@ -74,154 +48,21 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     }));
   });
 
-  // -- Player Management --
-  function addPlayer() {
-    const playerName = playerNameInput.trim();
-    if (!playerName) {
-      alert('Please enter a player name.');
-      return;
-    }
-    if (players.includes(playerName)) {
-      alert('This player is already added.');
-      return;
-    }
-    
-    // Update through the store instead
-    actions.addPlayer(playerName);
-  }
-
-  function removePlayer(index) {
-    actions.removePlayer(index);
-  }
-
-  function clearPlayers() {
-    actions.clearPlayers();
-  }
-
   // -- Game Logic --
   function startGame() {
     actions.startGame();
-    
-    // Give the store a chance to update the UI
-    setTimeout(() => {
-      // Now that state is updated, we can set up the turn
-      startPlayerTurn();
-    }, 10); // Small delay to ensure UI state has updated
   }
 
-  function startPlayerTurn() {
-    // Update store state
-    gameStore.update(state => ({
-      ...state,
-      allPinsPlaced: false,
-      nextZIndex: 100
-    }));
-    
-    // The rest of the function's DOM manipulation logic remains the same
-    const currentPlayer = players[currentTurn];
-    if (turnIndicatorElement) {
-      turnIndicatorElement.textContent = `${currentPlayer}'s Turn`;
-    }
-    
-    // Clear any existing pins from the graph container
-    if (graphContainer) {
-      const existingPins = graphContainer.querySelectorAll('.pin');
-      existingPins.forEach(pin => pin.remove());
-    }
-    
-    // Clear and recreate pins container contents
-    if (pinsContainer) {
-      pinsContainer.innerHTML = '';
-      
-      // Create a fresh pin for each player
-      players.forEach((player, index) => {
-        // Create base element
-        const pin = document.createElement('div');
-        pin.className = 'pin';
-        pin.textContent = player;
-        pin.setAttribute('data-player', player);
-        pin.setAttribute('data-placed', 'false');
-        
-        // Apply base styles that are common to all pins
-        const color = playerColors[index % playerColors.length];
-        pin.style.backgroundColor = color;
-        pin.style.color = getContrastYIQ(color) < 128 ? 'white' : '#4c2c69';
-        
-        // Explicitly set important dimensions to ensure consistency
-        pin.style.height = '34px';
-        pin.style.minWidth = '70px';
-        pin.style.width = 'auto';
-        pin.style.maxWidth = '120px';
-        pin.style.display = 'flex';
-        pin.style.justifyContent = 'center';
-        pin.style.alignItems = 'center';
-        
-        // Setup drag events - using direct property assignment
-        pin.onmousedown = (e) => dragStart(e, pin);
-        pin.ontouchstart = (e) => touchStart(e, pin);
-        pin.onclick = () => bringPinToFront(pin);
-        
-        // Add to container
-        pinsContainer.appendChild(pin);
-      });
-    }
-    
-    // Ensure styles are applied and layout is calculated
-    setTimeout(() => {
-      updatePinStatus();
-      adjustYAxisArrow(graphContainer);
-    }, 50);
-  }
-
-  function updatePinStatus() {
-    if (!gameSectionVisible) return;
-    
-    const pinElements = document.querySelectorAll('.pin');
-    let placedCount = 0;
-    
-    pinElements.forEach(pin => {
-      if (pin.getAttribute('data-placed') === 'true') {
-        placedCount++;
-      }
-    });
-    
-    // Update the store
-    gameStore.update(state => ({
-      ...state,
-      allPinsPlaced: placedCount === players.length
-    }));
-  }
-
-  function confirmPlacement() {
-    const placement = {};
-    const rect = graphContainer.getBoundingClientRect();
-    
-    document.querySelectorAll('.pin').forEach(pin => {
-      const player = pin.getAttribute('data-player');
-      if (!player) return;
-      
-      const leftStyle = pin.style.left;
-      const topStyle = pin.style.top;
-      
-      // Convert percentage to decimal if needed
-      const leftVal = leftStyle.endsWith('%') 
-        ? parseFloat(leftStyle) / 100 
-        : parseFloat(leftStyle) / rect.width;
-        
-      const topVal = topStyle.endsWith('%') 
-        ? parseFloat(topStyle) / 100 
-        : parseFloat(topStyle) / rect.height;
-        
-      placement[player] = { x: leftVal, y: topVal };
-    });
+  function handleConfirmPlacement(event) {
+    const { placement, player } = event.detail;
     
     // Determine if this is the last turn BEFORE updating the store
     const isLastTurn = currentTurn + 1 >= players.length;
     
-    // Update the store
+    // Update the store with new placement
     gameStore.update(state => {
       const newPlacements = { ...state.placements };
-      newPlacements[currentPlayer] = placement;
+      newPlacements[player] = placement;
       return {
         ...state,
         placements: newPlacements,
@@ -232,9 +73,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     // Use the pre-determined flag to decide what to do next
     if (isLastTurn) {
       showFinalScores();
-    } else {
-      // Add a small delay to ensure the store has updated
-      setTimeout(startPlayerTurn, 10);
     }
   }
 
@@ -256,168 +94,7 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     actions.resetGame();
   }
 
-  // -- Drag Functionality --
-  function dragStart(e, pin) {
-    e.preventDefault();
-    activeDragPin = pin;
-    bringPinToFront(pin);
-    
-    // If not placed, move from pins container -> graph container
-    if (pin.getAttribute('data-placed') === 'false') {
-      const pinStyle = window.getComputedStyle(pin);
-      const w = pinStyle.width;
-      const h = pinStyle.height;
-      
-      pin.parentNode?.removeChild(pin);
-      graphContainer.appendChild(pin);
-      
-      const rect = graphContainer.getBoundingClientRect();
-      const pinX = e.clientX - rect.left;
-      const pinY = e.clientY - rect.top;
-      
-      pin.style.position = 'absolute';
-      pin.style.left = pinX + 'px';
-      pin.style.top = pinY + 'px';
-      pin.style.transform = 'translate(-50%,-50%)';
-      pin.style.width = w;
-      pin.style.height = h;
-    }
-    
-    document.addEventListener('mousemove', dragMove);
-    document.addEventListener('mouseup', dragEnd);
-  }
-
-  function dragMove(e) {
-    if (!activeDragPin) return;
-    
-    const rect = graphContainer.getBoundingClientRect();
-    let newX = e.clientX - rect.left;
-    let newY = e.clientY - rect.top;
-    
-    if (activeDragPin.getAttribute('data-placed') === 'true') {
-      newX = Math.max(0, Math.min(newX, rect.width));
-      newY = Math.max(0, Math.min(newY, rect.height));
-    } else {
-      if (newX >= 0 && newX <= rect.width && newY >= 0 && newY <= rect.height) {
-        activeDragPin.setAttribute('data-placed', 'true');
-        updatePinStatus();
-      }
-    }
-    
-    activeDragPin.style.left = newX + 'px';
-    activeDragPin.style.top = newY + 'px';
-  }
-
-  function dragEnd() {
-    if (!activeDragPin) return;
-    
-    const rect = graphContainer.getBoundingClientRect();
-    const pinLeft = parseFloat(activeDragPin.style.left);
-    const pinTop = parseFloat(activeDragPin.style.top);
-    const outside = (pinLeft < 0 || pinLeft > rect.width || pinTop < 0 || pinTop > rect.height);
-    
-    if (outside && activeDragPin.getAttribute('data-placed') === 'false') {
-      graphContainer.removeChild(activeDragPin);
-      activeDragPin.style.position = '';
-      activeDragPin.style.left = '';
-      activeDragPin.style.top = '';
-      activeDragPin.style.transform = '';
-      pinsContainer.appendChild(activeDragPin);
-    }
-    
-    activeDragPin = null;
-    document.removeEventListener('mousemove', dragMove);
-    document.removeEventListener('mouseup', dragEnd);
-  }
-
-  // Touch handlers
-  function touchStart(e, pin) {
-    if (e.touches.length !== 1) return;
-    e.preventDefault();
-    activeDragPin = pin;
-    bringPinToFront(pin);
-    
-    if (pin.getAttribute('data-placed') === 'false') {
-      const pinStyle = window.getComputedStyle(pin);
-      const w = pinStyle.width;
-      const h = pinStyle.height;
-      
-      pin.parentNode?.removeChild(pin);
-      graphContainer.appendChild(pin);
-      
-      const rect = graphContainer.getBoundingClientRect();
-      const pinX = e.touches[0].clientX - rect.left;
-      const pinY = e.touches[0].clientY - rect.top;
-      
-      pin.style.position = 'absolute';
-      pin.style.left = pinX + 'px';
-      pin.style.top = pinY + 'px';
-      pin.style.transform = 'translate(-50%,-50%)';
-      pin.style.width = w;
-      pin.style.height = h;
-    }
-    
-    document.addEventListener('touchmove', touchMove, { passive: false });
-    document.addEventListener('touchend', touchEnd);
-  }
-
-  function touchMove(e) {
-    e.preventDefault();
-    if (!activeDragPin || e.touches.length !== 1) return;
-    
-    const rect = graphContainer.getBoundingClientRect();
-    let newX = e.touches[0].clientX - rect.left;
-    let newY = e.touches[0].clientY - rect.top;
-    
-    if (activeDragPin.getAttribute('data-placed') === 'true') {
-      newX = Math.max(0, Math.min(newX, rect.width));
-      newY = Math.max(0, Math.min(newY, rect.height));
-    } else {
-      if (newX >= 0 && newX <= rect.width && newY >= 0 && newY <= rect.height) {
-        activeDragPin.setAttribute('data-placed', 'true');
-        updatePinStatus();
-      }
-    }
-    
-    activeDragPin.style.left = newX + 'px';
-    activeDragPin.style.top = newY + 'px';
-  }
-
-  function touchEnd() {
-    if (!activeDragPin) return;
-    
-    const rect = graphContainer.getBoundingClientRect();
-    const pinLeft = parseFloat(activeDragPin.style.left);
-    const pinTop = parseFloat(activeDragPin.style.top);
-    const outside = (pinLeft < 0 || pinLeft > rect.width || pinTop < 0 || pinTop > rect.height);
-    
-    if (outside && activeDragPin.getAttribute('data-placed') === 'false') {
-      graphContainer.removeChild(activeDragPin);
-      activeDragPin.style.position = '';
-      activeDragPin.style.left = '';
-      activeDragPin.style.top = '';
-      activeDragPin.style.transform = '';
-      pinsContainer.appendChild(activeDragPin);
-    }
-    
-    activeDragPin = null;
-    document.removeEventListener('touchmove', touchMove);
-    document.removeEventListener('touchend', touchEnd);
-  }
-
-  function bringPinToFront(pin) {
-    // Update the nextZIndex in the store
-    gameStore.update(state => ({
-      ...state,
-      nextZIndex: state.nextZIndex + 1
-    }));
-    
-    // Use the updated value to set the pin's z-index
-    pin.style.zIndex = (nextZIndex + 1).toString();
-  }
-
   // -- Visualization & Scoring --
-  // FIXED FUNCTION: Updated to avoid race condition with state updates
   function createPlayerFilterButtons() {
     if (!playerFilterButtonsElement) return;
     
@@ -476,7 +153,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     });
   }
 
-  // FIXED FUNCTION: Updated to accept a filter parameter
   function createCollectivePlacementsChart(filterOverride = null) {
     if (!collectivePlacementsContainerElement) return;
     
@@ -744,6 +420,17 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     }
   }
 
+  function bringPinToFront(pin) {
+    // Update the nextZIndex in the store
+    gameStore.update(state => ({
+      ...state,
+      nextZIndex: state.nextZIndex + 1
+    }));
+    
+    // Use the updated value to set the pin's z-index
+    pin.style.zIndex = (nextZIndex + 1).toString();
+  }
+
   function calculateFinalScores() {
     const scores = {};
     players.forEach(p => scores[p] = 0);
@@ -773,13 +460,92 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     
     return scores;
   }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') {
-      addPlayer();
-    }
-  }
 </script>
+
+<div class="container">
+  <h1>Plot Twist!</h1>
+
+  <!-- Setup Section -->
+  {#if setupSectionVisible}
+    <SetupSection on:startGame={startGame} />
+  {/if}
+
+  <!-- Game Play Section -->
+  {#if gameSectionVisible}
+    <GameSection on:confirmPlacement={handleConfirmPlacement} />
+  {/if}
+
+  <!-- Final Scores Section -->
+  {#if finalScoresSectionVisible}
+    <div class="section final-scores-section">
+      <h2>Final Scores</h2>
+      <div bind:this={finalScoresTableElement}>
+        {#if Object.keys(placements).length > 0}
+          <table>
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each Object.entries(calculateFinalScores())
+                     .map(([player, score]) => ({ player, score }))
+                     .sort((a, b) => b.score - a.score) as item, i}
+                <tr class={i === 0 ? 'winner' : ''}>
+                  <td>{i + 1}</td>
+                  <td>{item.player}</td>
+                  <td>{item.score} points</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          {#if Object.entries(calculateFinalScores()).length > 0}
+            <div style="text-align: center; font-size: 18px; margin: 15px 0;">
+              <strong>{Object.entries(calculateFinalScores())
+                        .map(([player, score]) => ({ player, score }))
+                        .sort((a, b) => b.score - a.score)[0]?.player}</strong> 
+              knows their friends best with 
+              {Object.entries(calculateFinalScores())
+                .map(([player, score]) => ({ player, score }))
+                .sort((a, b) => b.score - a.score)[0]?.score} points!
+            </div>
+          {/if}
+        {/if}
+      </div>
+      
+      <h3 style="margin-top:30px; color:white;">Everyone's Placements</h3>
+
+      <!-- Player filter buttons -->
+      <div class="player-filter-container">
+        <div class="player-filter-heading">View where people placed:</div>
+        <div class="player-filter-buttons" bind:this={playerFilterButtonsElement}></div>
+      </div>
+
+      <div id="collective-placements-container" 
+           bind:this={collectivePlacementsContainerElement}
+           style="background-color:white; border-radius:8px; padding:12px; margin-bottom:15px;">
+      </div>
+
+      <div style="text-align:center; margin-top:15px; margin-bottom:15px;">
+        <p style="color:white; font-size:14px; margin-bottom:8px;">
+          Thanks for playing Plot Twist, please give us some feedback
+        </p>
+        <p style="margin-top:8px;">
+          <a href="https://forms.gle/P7ZFndmYZTRCye8i9" target="_blank"
+             style="color:white; text-decoration:underline;">
+            https://forms.gle/YL3cLa2v239HMNGe6
+          </a>
+        </p>
+      </div>
+
+      <div class="button-group" style="justify-content:center;">
+        <button on:click={resetGame}>Play Again</button>
+      </div>
+    </div>
+  {/if}
+</div>
 
 <style>
   /* Global Styles */
@@ -821,16 +587,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     border-radius: 8px;
   }
 
-  /* Game setup section */
-  .setup-section {
-    background-color: #fdc30f;
-  }
-
-  /* Game play section */
-  .game-section {
-    background-color: white;
-  }
-
   /* Final scores section */
   .final-scores-section {
     background-color: #4c2c69;
@@ -866,82 +622,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     background-color: #fdc30f;
     color: #4c2c69;
     font-weight: bold;
-  }
-
-  /* Form styles */
-  .form-group {
-    margin-bottom: 15px;
-  }
-  label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-  }
-
-  /* Player list styles */
-  .players-list {
-    margin: 20px 0;
-  }
-  .player-item {
-    background-color: #a6d3a0;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .player-item span {
-    flex-grow: 1;
-  }
-
-  /* Button styles */
-  button {
-    background-color: #3891a6;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
-  }
-  button:hover {
-    background-color: #2f758a;
-  }
-  button.secondary {
-    background-color: #db5461;
-  }
-  button.secondary:hover {
-    background-color: #c14853;
-  }
-  button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-  .button-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-  }
-
-  /* Graph container */
-  .graph-container {
-    position: relative;
-    width: 100%;
-    max-width: 350px;
-    aspect-ratio: 1 / 1;
-    margin: 0 auto;
-    border: 2px solid #4c2c69;
-    border-radius: 4px;
   }
 
   /* Axis labels */
@@ -1021,32 +701,8 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     border-color: transparent transparent transparent #4c2c69;
   }
 
-  /* Pins container */
-  .pins-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 8px;
-    margin: 15px 0;
-    padding: 8px;
-    height: auto;
-  }
-  
-  /* Pins container */
-  .pins-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 8px;
-    margin: 15px 0;
-    padding: 8px;
-    height: auto;
-  }
-  
   /* Basic pin styling - applies to all pins */
-  .pin, :global(.pin) {
+  :global(.pin) {
     box-sizing: border-box;
     min-width: 70px;
     width: auto;
@@ -1070,26 +726,14 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     flex-grow: 0;
   }
   
-  /* Pins in the container */
-  :global(.pins-container .pin) {
-    position: relative;
-    margin: 3px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transform: none;
-    border-radius: 4px;
-  }
-  
-  /* Pins on the graph */
-  :global(.graph-container .pin) {
+  /* Final placement chart pins */
+  :global(#collective-placements-container .pin) {
     position: absolute;
     transform: translate(-50%, -50%);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 10;
-    margin: 0;
+    z-index: 5;
   }
   
   /* Pins that haven't been placed yet */
@@ -1109,57 +753,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     cursor: grabbing;
     box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
     z-index: 1000;
-  }
-  
-  /* Final placement chart pins */
-  :global(#collective-placements-container .pin) {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 5;
-  }
-  
-  /* Placed pins in graph container */
-  :global(.graph-container .pin) {
-    position: absolute;
-    transform: translate(-50%,-50%);
-    z-index: 10;
-    margin: 0;
-  }
-  
-  :global(.pin[data-placed="false"]) {
-    box-shadow: 0 0 0 2px #db5461, 2px 2px 5px rgba(0,0,0,0.3);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 2px #db5461; }
-    50% { box-shadow: 0 0 0 4px #db5461; }
-    100% { box-shadow: 0 0 0 2px #db5461; }
-  }
-  :global(.pin:active), :global(.pin.dragging) {
-    cursor: grabbing;
-    box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
-    z-index: 1000;
-  }
-
-  /* Turn indicator */
-  .turn-indicator {
-    text-align: center;
-    margin-bottom: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #4c2c69;
-  }
-
-  /* Instructions */
-  .instructions {
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #fdc30f;
-    border-radius: 4px;
-    font-size: 13px;
   }
 
   /* Scoreboard tables */
@@ -1184,21 +777,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
   :global(.winner) {
     background-color: #fdc30f;
     font-weight: bold;
-  }
-
-  /* Pins status indicator */
-  .pins-status {
-    margin: 8px 0;
-    padding: 8px;
-    background-color: #f2f2f2;
-    border-radius: 4px;
-    text-align: center;
-    transition: all 0.3s ease;
-    font-size: 13px;
-  }
-  .pins-status.all-placed {
-    background-color: #a6d3a0;
-    color: #2a6b34;
   }
 
   /* Final scoreboard filters */
@@ -1249,6 +827,32 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     border: 2px solid #fdc30f;
   }
 
+  /* Button styles */
+  button {
+    background-color: #3891a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  button:hover {
+    background-color: #2f758a;
+  }
+  
+  button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
   /* Responsive styles */
   @media (min-width: 768px) {
     .container {
@@ -1262,19 +866,6 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     :global(.axis-label) {
       font-size: 13px;
       max-width: 90px;
-    }
-    .pin {
-      font-size: 13px;
-      min-width: 75px;
-      padding: 7px 10px;
-      height: 36px;
-      margin: 4px;
-    }
-    .turn-indicator {
-      font-size: 20px;
-    }
-    .instructions {
-      font-size: 14px;
     }
     :global(table) {
       font-size: 14px;
@@ -1314,162 +905,3 @@ $: axes = gameState?.axes || { x: { start: "", end: "" }, y: { start: "", end: "
     }
   }
 </style>
-
-<div class="container">
-  <h1>Plot Twist!</h1>
-
-  <!-- Setup Section -->
-  {#if setupSectionVisible}
-    <div class="section setup-section">
-      <h2>Player Setup</h2>
-      <div class="instructions">
-        <p>Enter the names of all players who will participate.</p>
-      </div>
-      <div class="form-group">
-        <label for="player-name">Player Name:</label>
-        <input type="text" id="player-name" placeholder="Enter player name" 
-               bind:value={playerNameInput} on:keydown={handleKeyDown} />
-      </div>
-      <button on:click={addPlayer}>Add Player</button>
-      <div class="players-list">
-        {#each players as player, i}
-          <div class="player-item">
-            <div style="margin-right: 10px;">{i + 1}.</div>
-            <span>{player}</span>
-            <button class="secondary" style="padding: 5px 10px;" on:click={() => removePlayer(i)}>Remove</button>
-          </div>
-        {/each}
-      </div>
-      <div class="button-group">
-        <button on:click={startGame} disabled={startGameDisabled}>Start Game</button>
-        <button on:click={clearPlayers} class="secondary">Clear All</button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Game Play Section -->
-  {#if gameSectionVisible}
-    <div class="section game-section">
-      <div class="turn-indicator" bind:this={turnIndicatorElement}>{currentPlayer}'s Turn</div>
-      <div class="instructions">
-        <p>Drag each sticky note from below and place it where you think that person belongs on the graph.</p>
-      </div>
-      <div id="pins-container" class="pins-container" bind:this={pinsContainer}>
-        {#each players as player, i}
-          <button class="pin" 
-               type="button"
-               aria-label={`Pin for ${player}`}
-               data-player={player}
-               data-placed="false"
-               style="background-color: {playerColors[i % playerColors.length]}; 
-                      color: {getContrastYIQ(playerColors[i % playerColors.length]) < 128 ? 'white' : '#4c2c69'};"
-               on:mousedown={(e) => dragStart(e, e.currentTarget)}
-               on:touchstart={(e) => touchStart(e, e.currentTarget)}
-               on:click={(e) => bringPinToFront(e.currentTarget)}
-               on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') bringPinToFront(e.currentTarget); }}>
-            {player}
-          </button>
-        {/each}
-      </div>
-      <div class="pins-status {pinsStatusClass}" bind:this={pinsStatusElement}>
-        {pinsStatusText}
-      </div>
-      <div class="graph-container" bind:this={graphContainer}>
-        <!-- Axis labels -->
-        <div class="axis-label x-axis-start">{axes.x.start}</div>
-        <div class="axis-label x-axis-end">{axes.x.end}</div>
-        <div class="axis-label y-axis-start">{axes.y.start}</div>
-        <div class="axis-label y-axis-end">{axes.y.end}</div>
-
-        <!-- The Y axis arrow -->
-        <div class="axis-arrow y-axis-arrow">
-          <div class="arrow-head arrow-top"></div>
-          <div class="arrow-head arrow-bottom"></div>
-        </div>
-        
-        <!-- X axis arrow -->
-        <div class="axis-arrow x-axis-arrow" style="
-          position:absolute; top:50%; left:50px; right:50px;
-          height:2px; transform:translateY(-50%);
-          background-color:#4c2c69; pointer-events:none;">
-          <div class="arrow-head arrow-left"></div>
-          <div class="arrow-head arrow-right"></div>
-        </div>
-      </div>
-      <div class="button-group" style="justify-content:center;">
-        <button on:click={confirmPlacement} disabled={confirmPlacementDisabled}>Confirm Placement</button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Final Scores Section -->
-  {#if finalScoresSectionVisible}
-    <div class="section final-scores-section">
-      <h2>Final Scores</h2>
-      <div bind:this={finalScoresTableElement}>
-        {#if Object.keys(placements).length > 0}
-          <table>
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each Object.entries(calculateFinalScores())
-                     .map(([player, score]) => ({ player, score }))
-                     .sort((a, b) => b.score - a.score) as item, i}
-                <tr class={i === 0 ? 'winner' : ''}>
-                  <td>{i + 1}</td>
-                  <td>{item.player}</td>
-                  <td>{item.score} points</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-          {#if Object.entries(calculateFinalScores()).length > 0}
-            <div style="text-align: center; font-size: 18px; margin: 15px 0;">
-              <strong>{Object.entries(calculateFinalScores())
-                        .map(([player, score]) => ({ player, score }))
-                        .sort((a, b) => b.score - a.score)[0]?.player}</strong> 
-              knows their friends best with 
-              {Object.entries(calculateFinalScores())
-                .map(([player, score]) => ({ player, score }))
-                .sort((a, b) => b.score - a.score)[0]?.score} points!
-            </div>
-          {/if}
-        {/if}
-      </div>
-      
-      <h3 style="margin-top:30px; color:white;">Everyone's Placements</h3>
-
-      <!-- Player filter buttons -->
-      <div class="player-filter-container">
-        <div class="player-filter-heading">View where people placed:</div>
-        <div class="player-filter-buttons" bind:this={playerFilterButtonsElement}></div>
-      </div>
-
-      <div id="collective-placements-container" 
-           bind:this={collectivePlacementsContainerElement}
-           style="background-color:white; border-radius:8px; padding:12px; margin-bottom:15px;">
-      </div>
-
-      <div style="text-align:center; margin-top:15px; margin-bottom:15px;">
-        <p style="color:white; font-size:14px; margin-bottom:8px;">
-          Thanks for playing Plot Twist, please give us some feedback
-        </p>
-        <p style="margin-top:8px;">
-          <a href="https://forms.gle/P7ZFndmYZTRCye8i9" target="_blank"
-             style="color:white; text-decoration:underline;">
-            https://forms.gle/YL3cLa2v239HMNGe6
-          </a>
-        </p>
-      </div>
-
-      <div class="button-group" style="justify-content:center;">
-        <button on:click={resetGame}>Play Again</button>
-      </div>
-    </div>
-  {/if}
-</div>
