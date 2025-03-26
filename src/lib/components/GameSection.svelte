@@ -44,21 +44,20 @@
       '#c0e2bc'
     ];
     
-    // Initialize component when mounted and whenever the current turn changes
-    $: if (currentTurn !== undefined) {
+    // FIX: Add reactive statement for when currentTurn changes
+    $: if (currentTurn !== undefined && graphContainer && pinsContainer) {
       startPlayerTurn();
     }
     
     onMount(() => {
-      // Adjust axis arrows on mount
+      // Adjust the axes arrows on mount
       setTimeout(() => {
         adjustYAxisArrow(graphContainer);
-      }, 0);
+      }, 50);
     });
   
     function startPlayerTurn() {
-      // Wait until DOM elements are available
-      if (!pinsContainer || !graphContainer || !turnIndicatorElement) return;
+      if (!pinsContainer || !graphContainer) return;
       
       // Update store state
       gameStore.update(state => ({
@@ -67,7 +66,7 @@
         nextZIndex: 100
       }));
       
-      // Update turn indicator
+      // Update turn indicator with current player's name
       if (turnIndicatorElement) {
         turnIndicatorElement.textContent = `${currentPlayer}'s Turn`;
       }
@@ -94,6 +93,7 @@
         pin.style.color = getContrastYIQ(color) < 128 ? 'white' : '#4c2c69';
         
         // Explicitly set important dimensions to ensure consistency
+        pin.style.position = 'relative';
         pin.style.height = '34px';
         pin.style.minWidth = '70px';
         pin.style.width = 'auto';
@@ -101,6 +101,21 @@
         pin.style.display = 'flex';
         pin.style.justifyContent = 'center';
         pin.style.alignItems = 'center';
+        pin.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+        pin.style.fontSize = '12px';
+        pin.style.fontWeight = 'bold';
+        pin.style.borderRadius = '4px';
+        pin.style.margin = '3px';
+        pin.style.padding = '6px 8px';
+        pin.style.cursor = 'pointer';
+        pin.style.userSelect = 'none';
+        pin.style.boxShadow = '0 0 0 2px #db5461, 2px 2px 5px rgba(0,0,0,0.3)';
+        pin.style.transform = 'none';
+        pin.style.lineHeight = '1.2';
+        pin.style.border = 'none';
+        pin.style.textAlign = 'center';
+        pin.style.whiteSpace = 'nowrap';
+        pin.style.overflow = 'hidden';
         
         // Setup drag events - using direct property assignment
         pin.onmousedown = (e) => dragStart(e, pin);
@@ -190,6 +205,8 @@
         pin.style.transform = 'translate(-50%,-50%)';
         pin.style.width = w;
         pin.style.height = h;
+        pin.style.margin = '0';
+        pin.style.zIndex = '10';
       }
       
       document.addEventListener('mousemove', dragMove);
@@ -231,6 +248,8 @@
         activeDragPin.style.left = '';
         activeDragPin.style.top = '';
         activeDragPin.style.transform = '';
+        activeDragPin.style.margin = '3px';
+        activeDragPin.style.boxShadow = '0 0 0 2px #db5461, 2px 2px 5px rgba(0,0,0,0.3)';
         pinsContainer.appendChild(activeDragPin);
       }
       
@@ -264,6 +283,7 @@
         pin.style.transform = 'translate(-50%,-50%)';
         pin.style.width = w;
         pin.style.height = h;
+        pin.style.margin = '0';
       }
       
       document.addEventListener('touchmove', touchMove, { passive: false });
@@ -306,6 +326,7 @@
         activeDragPin.style.left = '';
         activeDragPin.style.top = '';
         activeDragPin.style.transform = '';
+        activeDragPin.style.margin = '3px';
         pinsContainer.appendChild(activeDragPin);
       }
       
@@ -332,21 +353,7 @@
       <p>Drag each sticky note from below and place it where you think that person belongs on the graph.</p>
     </div>
     <div id="pins-container" class="pins-container" bind:this={pinsContainer}>
-      {#each players as player, i}
-        <button class="pin" 
-             type="button"
-             aria-label={`Pin for ${player}`}
-             data-player={player}
-             data-placed="false"
-             style="background-color: {playerColors[i % playerColors.length]}; 
-                    color: {getContrastYIQ(playerColors[i % playerColors.length]) < 128 ? 'white' : '#4c2c69'};"
-             on:mousedown={(e) => dragStart(e, e.currentTarget)}
-             on:touchstart={(e) => touchStart(e, e.currentTarget)}
-             on:click={(e) => bringPinToFront(e.currentTarget)}
-             on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') bringPinToFront(e.currentTarget); }}>
-          {player}
-        </button>
-      {/each}
+      <!-- Pins will be created dynamically in JavaScript -->
     </div>
     <div class="pins-status {pinsStatusClass}" bind:this={pinsStatusElement}>
       {pinsStatusText}
@@ -365,10 +372,7 @@
       </div>
       
       <!-- X axis arrow -->
-      <div class="axis-arrow x-axis-arrow" style="
-        position:absolute; top:50%; left:50px; right:50px;
-        height:2px; transform:translateY(-50%);
-        background-color:#4c2c69; pointer-events:none;">
+      <div class="axis-arrow x-axis-arrow">
         <div class="arrow-head arrow-left"></div>
         <div class="arrow-head arrow-right"></div>
       </div>
@@ -415,8 +419,9 @@
     }
     
     /* Basic pin styling - applies to all pins */
-    .pin {
+    :global(.pin) {
       box-sizing: border-box;
+      position: relative;
       min-width: 70px;
       width: auto;
       max-width: 120px;
@@ -437,6 +442,48 @@
       border: none;
       flex-shrink: 0;
       flex-grow: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Pins in the container */
+    :global(.pins-container .pin) {
+      position: relative;
+      margin: 3px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform: none;
+      border-radius: 4px;
+    }
+    
+    /* Pins on the graph */
+    :global(.graph-container .pin) {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      margin: 0;
+    }
+    
+    /* Pins that haven't been placed yet */
+    :global(.pin[data-placed="false"]) {
+      box-shadow: 0 0 0 2px #db5461, 2px 2px 5px rgba(0,0,0,0.3);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 2px #db5461; }
+      50% { box-shadow: 0 0 0 4px #db5461; }
+      100% { box-shadow: 0 0 0 2px #db5461; }
+    }
+    
+    /* Active pins during dragging */
+    :global(.pin.dragging) {
+      cursor: grabbing;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+      z-index: 1000;
     }
   
     /* Turn indicator */
@@ -467,9 +514,108 @@
       transition: all 0.3s ease;
       font-size: 13px;
     }
+    
     .pins-status.all-placed {
       background-color: #a6d3a0;
       color: #2a6b34;
+    }
+  
+    /* Axis labels */
+    :global(.axis-label) {
+      position: absolute;
+      font-weight: bold;
+      color: #4c2c69;
+      z-index: 5;
+      font-size: 12px;
+      padding: 3px;
+      background-color: rgba(255,255,255,0.7);
+      border-radius: 3px;
+      text-align: center;
+      max-width: 100px;
+    }
+    
+    /* X axis labels */
+    :global(.x-axis-start) {
+      left: 10px;
+      bottom: calc(50% + 15px);
+    }
+    
+    :global(.x-axis-end) {
+      right: 10px;
+      bottom: calc(50% + 15px);
+    }
+  
+    /* Y axis labels */
+    :global(.y-axis-start) {
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%);
+    }
+    
+    :global(.y-axis-end) {
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+    }
+  
+    /* The arrow line itself */
+    :global(.y-axis-arrow) {
+      position: absolute;
+      pointer-events: none;
+      left: 50%;
+      width: 2px;
+      transform: translateX(-50%);
+      background-color: #4c2c69;
+      top: 30px;
+      bottom: 30px;
+    }
+  
+    /* X axis arrow */
+    :global(.x-axis-arrow) {
+      position: absolute;
+      pointer-events: none;
+      top: 50%;
+      left: 50px;
+      right: 50px;
+      height: 2px;
+      transform: translateY(-50%);
+      background-color: #4c2c69;
+    }
+  
+    /* Arrow heads */
+    :global(.arrow-head) {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+    
+    :global(.arrow-top) {
+      top: -6px;
+      left: -4px;
+      border-width: 0 5px 8px 5px;
+      border-color: transparent transparent #4c2c69 transparent;
+    }
+    
+    :global(.arrow-bottom) {
+      bottom: -6px;
+      left: -4px;
+      border-width: 8px 5px 0 5px;
+      border-color: #4c2c69 transparent transparent transparent;
+    }
+    
+    :global(.arrow-left) {
+      left: -6px;
+      top: -4px;
+      border-width: 5px 8px 5px 0;
+      border-color: transparent #4c2c69 transparent transparent;
+    }
+    
+    :global(.arrow-right) {
+      right: -6px;
+      top: -4px;
+      border-width: 5px 0 5px 8px;
+      border-color: transparent transparent transparent #4c2c69;
     }
   
     /* Button styles */
@@ -483,6 +629,7 @@
       font-size: 16px;
       transition: background-color 0.3s;
     }
+    
     button:hover {
       background-color: #2f758a;
     }
@@ -492,6 +639,7 @@
       cursor: not-allowed;
       opacity: 0.7;
     }
+    
     .button-group {
       display: flex;
       gap: 10px;
@@ -504,25 +652,22 @@
         padding: 15px;
         margin-bottom: 20px;
       }
-      .pin {
-        font-size: 13px;
-        min-width: 75px;
-        padding: 7px 10px;
-        height: 36px;
-        margin: 4px;
-      }
+      
       .turn-indicator {
         font-size: 20px;
       }
+      
       .instructions {
         font-size: 14px;
       }
     }
+    
     @media (max-width: 480px) {
       .section {
         padding: 10px;
         margin-bottom: 15px;
       }
+      
       button {
         padding: 8px 16px;
         font-size: 14px;
