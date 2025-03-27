@@ -4,9 +4,9 @@
   
     // Props - These can be overridden by the parent component if needed
     export let canAddPlayers = true;
-    export let showControls = true;
     export let showRemoveButtons = true;
     export let showPlayerNumbers = true;
+    // Removed unused showControls prop
   
     // Set up event dispatcher to communicate with parent
     const dispatch = createEventDispatcher();
@@ -174,11 +174,7 @@
       font-size: 14px;
     }
     
-    .player-list-controls {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 10px;
-    }
+    /* Removed unused CSS selector */
     
     /* Responsive styles */
     @media (min-width: 768px) {
