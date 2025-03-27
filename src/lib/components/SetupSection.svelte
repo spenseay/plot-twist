@@ -1,38 +1,13 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import gameStore, { actions } from '$lib/stores/gameStore.js';
+  import PlayerList from '$lib/components/UI/PlayerList.svelte';
 
   // Set up event dispatcher to communicate with parent
   const dispatch = createEventDispatcher();
   
   // Subscribe to game store for player data
   $: players = $gameStore?.players || [];
-  $: playerNameInput = $gameStore?.playerNameInput || '';
-  
-  // Add a new player to the game
-  function addPlayer() {
-    const name = playerNameInput.trim();
-    if (!name) {
-      alert('Please enter a player name.');
-      return;
-    }
-    if (players.includes(name)) {
-      alert('This player is already added.');
-      return;
-    }
-    
-    actions.addPlayer(name);
-  }
-
-  // Remove a player at the specified index
-  function removePlayer(index) {
-    actions.removePlayer(index);
-  }
-
-  // Clear all players
-  function clearPlayers() {
-    actions.clearPlayers();
-  }
 
   // Start the game
   function startGame() {
@@ -44,11 +19,20 @@
     dispatch('startGame');
   }
 
-  // Handle Enter key press in the input field
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') {
-      addPlayer();
-    }
+  // Handle events from PlayerList component
+  function handlePlayerAdded(event) {
+    // Additional logic can be added here if needed
+    console.log('Player added:', event.detail.player);
+  }
+
+  function handlePlayerRemoved(event) {
+    // Additional logic can be added here if needed
+    console.log('Player removed:', event.detail.player);
+  }
+
+  function handlePlayersCleared() {
+    // Additional logic can be added here if needed
+    console.log('All players cleared');
   }
 </script>
 
@@ -58,34 +42,12 @@
     <p>Enter the names of all players who will participate.</p>
   </div>
   
-  <div class="form-group">
-    <label for="player-name">Player Name:</label>
-    <input 
-      type="text" 
-      id="player-name" 
-      placeholder="Enter player name" 
-      bind:value={playerNameInput}
-      on:keydown={handleKeyDown}
-    />
-  </div>
-  
-  <button on:click={addPlayer}>Add Player</button>
-  
-  <div class="players-list">
-    {#each players as player, i}
-      <div class="player-item">
-        <div style="margin-right: 10px;">{i + 1}.</div>
-        <span>{player}</span>
-        <button 
-          class="secondary" 
-          style="padding: 5px 10px;"
-          on:click={() => removePlayer(i)}
-        >
-          Remove
-        </button>
-      </div>
-    {/each}
-  </div>
+  <!-- Use our new PlayerList component -->
+  <PlayerList 
+    on:playerAdded={handlePlayerAdded}
+    on:playerRemoved={handlePlayerRemoved}
+    on:playersCleared={handlePlayersCleared}
+  />
   
   <div class="button-group">
     <button 
@@ -93,12 +55,6 @@
       disabled={players.length < 2}
     >
       Start Game
-    </button>
-    <button 
-      on:click={clearPlayers} 
-      class="secondary"
-    >
-      Clear All
     </button>
   </div>
 </div>
@@ -115,11 +71,6 @@
     border-radius: 8px;
   }
   
-  /* Form styles */
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
   /* Instructions */
   .instructions {
     margin-bottom: 10px;
@@ -127,25 +78,6 @@
     background-color: #fdc30f;
     border-radius: 4px;
     font-size: 13px;
-  }
-  
-  /* Player list styles */
-  .players-list {
-    margin: 20px 0;
-  }
-  
-  .player-item {
-    background-color: #a6d3a0;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .player-item span {
-    flex-grow: 1;
   }
   
   /* Button styles */
@@ -162,14 +94,6 @@
   
   button:hover {
     background-color: #2f758a;
-  }
-  
-  button.secondary {
-    background-color: #db5461;
-  }
-  
-  button.secondary:hover {
-    background-color: #c14853;
   }
   
   button:disabled {
