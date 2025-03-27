@@ -1,10 +1,11 @@
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
+    import { createEventDispatcher, onMount, tick } from 'svelte';
     import { getContrastYIQ } from '$lib/utils/colorUtils.js';
     import { calculateDistance } from '$lib/utils/mathUtils.js';
     import { adjustYAxisArrowForChart } from '$lib/utils/axisUtils.js';
     import gameStore from '$lib/stores/gameStore.js';
     import { get } from 'svelte/store';
+    import GraphContainer from '$lib/components/Graph/GraphContainer.svelte';
   
     // Set up event dispatcher to communicate with parent
     const dispatch = createEventDispatcher();
@@ -21,6 +22,7 @@
     let finalScoresTableElement;
     let playerFilterButtonsElement;
     let collectivePlacementsContainerElement;
+    let graphContainerRef = null; // This will hold the actual container DOM element
     
     // Color palette for pins
     const playerColors = [
@@ -35,11 +37,31 @@
       '#c0e2bc'
     ];
     
-    onMount(() => {
-      // Initialize the chart when the component is mounted
-      setTimeout(() => {
-        createCollectivePlacementsChart();
-      }, 10);
+    // Track if chart is created
+    let isInitialized = false;
+    
+    // When the filter changes, update the chart
+    $: if (selectedFilter && isInitialized) {
+      updatePlayerFilterButtons();
+      renderPins();
+      addPlayerSpecificScoreboard();
+    }
+    
+    onMount(async () => {
+      // Initialize once mounted
+      await tick();
+      
+      // Create filter buttons
+      createPlayerFilterButtons();
+      
+      // Wait for next tick to ensure container is rendered
+      await tick();
+      
+      // Now render pins
+      if (graphContainerRef) {
+        renderPins();
+        isInitialized = true;
+      }
     });
     
     // Calculate final scores based on player placements
@@ -89,13 +111,6 @@
           ...state,
           selectedFilter: 'all'
         }));
-        
-        // Use setTimeout to ensure this runs after the store update is processed
-        setTimeout(() => {
-          // Get the latest state directly from the store
-          const currentState = get(gameStore);
-          createCollectivePlacementsChart(currentState.selectedFilter);
-        }, 0);
       };
       playerFilterButtonsElement.appendChild(allButton);
       
@@ -119,132 +134,57 @@
             ...state,
             selectedFilter: p
           }));
-          
-          // Use setTimeout to ensure this runs after the store update is processed
-          setTimeout(() => {
-            // Get the latest state directly from the store
-            const currentState = get(gameStore);
-            createCollectivePlacementsChart(currentState.selectedFilter);
-          }, 0);
         };
         
         playerFilterButtonsElement.appendChild(btn);
       });
     }
     
-    // Create the chart showing all player placements
-    function createCollectivePlacementsChart(filterOverride = null) {
-      if (!collectivePlacementsContainerElement) return;
+    // Update player filter buttons active state
+    function updatePlayerFilterButtons() {
+      if (!playerFilterButtonsElement) return;
       
-      collectivePlacementsContainerElement.innerHTML = '';
+      const buttons = playerFilterButtonsElement.querySelectorAll('.player-filter-button');
+      buttons.forEach(btn => {
+        if (btn.classList.contains('all-button')) {
+          if (selectedFilter === 'all') {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        } else {
+          if (btn.textContent === selectedFilter) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+    }
+    
+    // Render pins on the graph
+    function renderPins() {
+      if (!graphContainerRef) return;
       
-      // Use the parameter if provided, otherwise fall back to the reactive variable
-      const filterToUse = filterOverride !== null ? filterOverride : selectedFilter;
+      // Clear existing pins
+      const existingPins = graphContainerRef.querySelectorAll('.pin');
+      existingPins.forEach(pin => pin.remove());
       
-      // Update the store
+      // Reset z-index counter
       gameStore.update(state => ({
         ...state,
         nextZIndex: 100
       }));
       
-      createPlayerFilterButtons();
-      
-      const chartTitle = document.createElement('h3');
-      chartTitle.textContent = 'Player Placement Map';
-      chartTitle.style.textAlign = 'center';
-      chartTitle.style.marginBottom = '15px';
-      chartTitle.style.color = '#4c2c69';
-      collectivePlacementsContainerElement.appendChild(chartTitle);
-      
-      // Create chart container
-      const chartContainer = document.createElement('div');
-      chartContainer.style.position = 'relative';
-      chartContainer.style.width = '100%';
-      chartContainer.style.maxWidth = '350px';
-      chartContainer.style.aspectRatio = '1 / 1';
-      chartContainer.style.margin = '0 auto';
-      chartContainer.style.border = '2px solid #4c2c69';
-      chartContainer.style.borderRadius = '4px';
-      chartContainer.style.backgroundColor = 'white';
-      
-      // X axis labels
-      const xAxisStart = document.createElement('div');
-      xAxisStart.className = 'axis-label x-axis-start';
-      xAxisStart.style.left = '10px';
-      xAxisStart.style.bottom = 'calc(50% + 15px)';
-      xAxisStart.textContent = axes.x.start;
-      chartContainer.appendChild(xAxisStart);
-      
-      const xAxisEnd = document.createElement('div');
-      xAxisEnd.className = 'axis-label x-axis-end';
-      xAxisEnd.style.right = '10px';
-      xAxisEnd.style.bottom = 'calc(50% + 15px)';
-      xAxisEnd.textContent = axes.x.end;
-      chartContainer.appendChild(xAxisEnd);
-      
-      // Y axis labels
-      const yAxisStart = document.createElement('div');
-      yAxisStart.className = 'axis-label y-axis-start';
-      yAxisStart.style.bottom = '10px';
-      yAxisStart.style.left = '50%';
-      yAxisStart.style.transform = 'translateX(-50%)';
-      yAxisStart.textContent = axes.y.start;
-      chartContainer.appendChild(yAxisStart);
-      
-      const yAxisEnd = document.createElement('div');
-      yAxisEnd.className = 'axis-label y-axis-end';
-      yAxisEnd.style.top = '10px';
-      yAxisEnd.style.left = '50%';
-      yAxisEnd.style.transform = 'translateX(-50%)';
-      yAxisEnd.textContent = axes.y.end;
-      chartContainer.appendChild(yAxisEnd);
-      
-      // Y axis arrow
-      const yAxisArrow = document.createElement('div');
-      yAxisArrow.className = 'axis-arrow y-axis-arrow';
-      yAxisArrow.style.position = 'absolute';
-      yAxisArrow.style.pointerEvents = 'none';
-      yAxisArrow.style.left = '50%';
-      yAxisArrow.style.width = '2px';
-      yAxisArrow.style.transform = 'translateX(-50%)';
-      yAxisArrow.style.backgroundColor = '#4c2c69';
-      yAxisArrow.style.top = '30px';
-      yAxisArrow.style.bottom = '30px';
-      yAxisArrow.innerHTML = `
-        <div class="arrow-head arrow-top"></div>
-        <div class="arrow-head arrow-bottom"></div>
-      `;
-      chartContainer.appendChild(yAxisArrow);
-      
-      // X axis arrow
-      const xAxisArrow = document.createElement('div');
-      xAxisArrow.className = 'axis-arrow x-axis-arrow';
-      xAxisArrow.style.position = 'absolute';
-      xAxisArrow.style.pointerEvents = 'none';
-      xAxisArrow.style.top = '50%';
-      xAxisArrow.style.left = '50px';
-      xAxisArrow.style.right = '50px';
-      xAxisArrow.style.height = '2px';
-      xAxisArrow.style.transform = 'translateY(-50%)';
-      xAxisArrow.style.backgroundColor = '#4c2c69';
-      xAxisArrow.innerHTML = `
-        <div class="arrow-head arrow-left"></div>
-        <div class="arrow-head arrow-right"></div>
-      `;
-      chartContainer.appendChild(xAxisArrow);
-      
-      collectivePlacementsContainerElement.appendChild(chartContainer);
-      
-      // Show pins
-      // Use filterToUse instead of selectedFilter
-      const isFiltering = (filterToUse !== 'all');
-      const selectedP = isFiltering ? filterToUse : null;
+      // Determine if we're filtering
+      const isFiltering = (selectedFilter !== 'all');
+      const selectedP = isFiltering ? selectedFilter : null;
       
       players.forEach((person, pIdx) => {
         const personColor = playerColors[pIdx % playerColors.length];
         
         if (isFiltering && person !== selectedP) {
-          // Dim pins
+          // Dim pins for non-selected players when filtering
           players.forEach(placer => {
             const placerData = placements[placer];
             if (!placerData) return;
@@ -279,7 +219,7 @@
             pin.style.overflow = 'hidden';
             pin.style.textAlign = 'center';
             pin.addEventListener('click', () => bringPinToFront(pin));
-            chartContainer.appendChild(pin);
+            graphContainerRef.appendChild(pin);
           });
           return;
         }
@@ -331,131 +271,133 @@
           pin.style.zIndex = placer === person ? '20' : '10';
           
           pin.addEventListener('click', () => bringPinToFront(pin));
-          chartContainer.appendChild(pin);
+          graphContainerRef.appendChild(pin);
         });
       });
+    }
+    
+    // Add player-specific scoreboard when filtering by player
+    function addPlayerSpecificScoreboard() {
+      // First clear any existing scoreboards
+      const existingScoreboards = collectivePlacementsContainerElement.querySelectorAll('.player-scoreboard');
+      existingScoreboards.forEach(sb => sb.remove());
       
-      // Adjust the y-axis arrow
-      setTimeout(() => {
-        adjustYAxisArrowForChart(chartContainer);
-      }, 0);
+      // If not filtering, return early
+      if (selectedFilter === 'all') return;
       
-      // If filtering by a specific player, show a scoreboard
-      if (isFiltering) {
-        const sp = filterToUse; // Use filterToUse instead of selectedFilter
-        const spData = placements[sp];
-        if (!spData) return;
+      const sp = selectedFilter;
+      const spData = placements[sp];
+      if (!spData) return;
+      
+      const selfPlace = spData[sp];
+      if (!selfPlace) return;
+      
+      const scoreboardContainer = document.createElement('div');
+      scoreboardContainer.className = 'player-scoreboard';
+      scoreboardContainer.style.marginTop = '20px';
+      scoreboardContainer.style.backgroundColor = '#f9f9f9';
+      scoreboardContainer.style.padding = '12px';
+      scoreboardContainer.style.borderRadius = '8px';
+      scoreboardContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+      
+      const scoreboardTitle = document.createElement('h4');
+      scoreboardTitle.textContent = `Who knows ${sp} best?`;
+      scoreboardTitle.style.textAlign = 'center';
+      scoreboardTitle.style.marginBottom = '12px';
+      scoreboardTitle.style.color = '#4c2c69';
+      scoreboardContainer.appendChild(scoreboardTitle);
+      
+      const playerScores = [];
+      players.forEach(pl => {
+        if (pl === sp) return;
         
-        const selfPlace = spData[sp];
+        const plData = placements[pl];
+        if (!plData) return;
         
-        if (selfPlace) {
-          const scoreboardContainer = document.createElement('div');
-          scoreboardContainer.style.marginTop = '20px';
-          scoreboardContainer.style.backgroundColor = '#f9f9f9';
-          scoreboardContainer.style.padding = '12px';
-          scoreboardContainer.style.borderRadius = '8px';
-          scoreboardContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-          
-          const scoreboardTitle = document.createElement('h4');
-          scoreboardTitle.textContent = `Who knows ${sp} best?`;
-          scoreboardTitle.style.textAlign = 'center';
-          scoreboardTitle.style.marginBottom = '12px';
-          scoreboardTitle.style.color = '#4c2c69';
-          scoreboardContainer.appendChild(scoreboardTitle);
-          
-          const playerScores = [];
-          players.forEach(pl => {
-            if (pl === sp) return;
-            
-            const plData = placements[pl];
-            if (!plData) return;
-            
-            const place = plData[sp];
-            if (!place) return;
-            
-            const dist = calculateDistance(selfPlace, place);
-            const maxDist = Math.sqrt(2);
-            const sc = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
-            playerScores.push({ player: pl, score: sc });
-          });
-          
-          playerScores.sort((a, b) => b.score - a.score);
-          
-          const scoreTable = document.createElement('table');
-          scoreTable.style.width = '100%';
-          scoreTable.style.borderCollapse = 'collapse';
-          scoreTable.style.marginTop = '15px';
-          scoreTable.style.fontSize = '14px';
-          
-          const header = document.createElement('tr');
-          const rankH = document.createElement('th');
-          rankH.textContent = 'Rank';
-          rankH.style.backgroundColor = '#3891a6';
-          rankH.style.color = 'white';
-          rankH.style.padding = '8px';
-          rankH.style.textAlign = 'left';
-          rankH.style.border = '1px solid #ddd';
-          
-          const playerH = document.createElement('th');
-          playerH.textContent = 'Player';
-          playerH.style.backgroundColor = '#3891a6';
-          playerH.style.color = 'white';
-          playerH.style.padding = '8px';
-          playerH.style.textAlign = 'left';
-          playerH.style.border = '1px solid #ddd';
-          
-          const scoreH = document.createElement('th');
-          scoreH.textContent = 'Points';
-          scoreH.style.backgroundColor = '#3891a6';
-          scoreH.style.color = 'white';
-          scoreH.style.padding = '8px';
-          scoreH.style.textAlign = 'left';
-          scoreH.style.border = '1px solid #ddd';
-          
-          header.appendChild(rankH);
-          header.appendChild(playerH);
-          header.appendChild(scoreH);
-          scoreTable.appendChild(header);
-          
-          playerScores.forEach((s, i) => {
-            const row = document.createElement('tr');
-            if (i === 0) {
-              row.style.backgroundColor = '#fdc30f';
-              row.style.color = '#4c2c69';
-              row.style.fontWeight = 'bold';
-            } else {
-              row.style.backgroundColor = i % 2 === 0 ? 'white' : '#f2f2f2';
-              row.style.color = '#4c2c69';
-            }
-            
-            const rankTd = document.createElement('td');
-            rankTd.textContent = (i + 1).toString();
-            rankTd.style.border = '1px solid #ddd';
-            rankTd.style.padding = '8px';
-            rankTd.style.textAlign = 'left';
-            
-            const playerTd = document.createElement('td');
-            playerTd.textContent = s.player;
-            playerTd.style.border = '1px solid #ddd';
-            playerTd.style.padding = '8px';
-            playerTd.style.textAlign = 'left';
-            
-            const scoreTd = document.createElement('td');
-            scoreTd.textContent = s.score + ' points';
-            scoreTd.style.border = '1px solid #ddd';
-            scoreTd.style.padding = '8px';
-            scoreTd.style.textAlign = 'left';
-            
-            row.appendChild(rankTd);
-            row.appendChild(playerTd);
-            row.appendChild(scoreTd);
-            scoreTable.appendChild(row);
-          });
-          
-          scoreboardContainer.appendChild(scoreTable);
-          collectivePlacementsContainerElement.appendChild(scoreboardContainer);
+        const place = plData[sp];
+        if (!place) return;
+        
+        const dist = calculateDistance(selfPlace, place);
+        const maxDist = Math.sqrt(2);
+        const sc = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
+        playerScores.push({ player: pl, score: sc });
+      });
+      
+      playerScores.sort((a, b) => b.score - a.score);
+      
+      const scoreTable = document.createElement('table');
+      scoreTable.style.width = '100%';
+      scoreTable.style.borderCollapse = 'collapse';
+      scoreTable.style.marginTop = '15px';
+      scoreTable.style.fontSize = '14px';
+      
+      const header = document.createElement('tr');
+      const rankH = document.createElement('th');
+      rankH.textContent = 'Rank';
+      rankH.style.backgroundColor = '#3891a6';
+      rankH.style.color = 'white';
+      rankH.style.padding = '8px';
+      rankH.style.textAlign = 'left';
+      rankH.style.border = '1px solid #ddd';
+      
+      const playerH = document.createElement('th');
+      playerH.textContent = 'Player';
+      playerH.style.backgroundColor = '#3891a6';
+      playerH.style.color = 'white';
+      playerH.style.padding = '8px';
+      playerH.style.textAlign = 'left';
+      playerH.style.border = '1px solid #ddd';
+      
+      const scoreH = document.createElement('th');
+      scoreH.textContent = 'Points';
+      scoreH.style.backgroundColor = '#3891a6';
+      scoreH.style.color = 'white';
+      scoreH.style.padding = '8px';
+      scoreH.style.textAlign = 'left';
+      scoreH.style.border = '1px solid #ddd';
+      
+      header.appendChild(rankH);
+      header.appendChild(playerH);
+      header.appendChild(scoreH);
+      scoreTable.appendChild(header);
+      
+      playerScores.forEach((s, i) => {
+        const row = document.createElement('tr');
+        if (i === 0) {
+          row.style.backgroundColor = '#fdc30f';
+          row.style.color = '#4c2c69';
+          row.style.fontWeight = 'bold';
+        } else {
+          row.style.backgroundColor = i % 2 === 0 ? 'white' : '#f2f2f2';
+          row.style.color = '#4c2c69';
         }
-      }
+        
+        const rankTd = document.createElement('td');
+        rankTd.textContent = (i + 1).toString();
+        rankTd.style.border = '1px solid #ddd';
+        rankTd.style.padding = '8px';
+        rankTd.style.textAlign = 'left';
+        
+        const playerTd = document.createElement('td');
+        playerTd.textContent = s.player;
+        playerTd.style.border = '1px solid #ddd';
+        playerTd.style.padding = '8px';
+        playerTd.style.textAlign = 'left';
+        
+        const scoreTd = document.createElement('td');
+        scoreTd.textContent = s.score + ' points';
+        scoreTd.style.border = '1px solid #ddd';
+        scoreTd.style.padding = '8px';
+        scoreTd.style.textAlign = 'left';
+        
+        row.appendChild(rankTd);
+        row.appendChild(playerTd);
+        row.appendChild(scoreTd);
+        scoreTable.appendChild(row);
+      });
+      
+      scoreboardContainer.appendChild(scoreTable);
+      collectivePlacementsContainerElement.appendChild(scoreboardContainer);
     }
     
     function bringPinToFront(pin) {
@@ -524,6 +466,17 @@
     <div id="collective-placements-container" 
          bind:this={collectivePlacementsContainerElement}
          class="collective-placements-container">
+      
+      <!-- Chart title -->
+      <h3 class="chart-title">Player Placement Map</h3>
+      
+      <!-- Here's where we use our GraphContainer component -->
+      <div class="chart-wrapper">
+        <GraphContainer 
+          {axes} 
+          forScoreSection={true} 
+          bind:containerRef={graphContainerRef} />
+      </div>
     </div>
   
     <div class="feedback-section">
@@ -566,6 +519,19 @@
       font-size: 1.3em;
       margin-top: 20px;
       margin-bottom: 10px;
+    }
+    
+    /* Chart title and wrapper */
+    .chart-title {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #4c2c69;
+    }
+    
+    .chart-wrapper {
+      width: 100%;
+      max-width: 350px;
+      margin: 0 auto;
     }
     
     /* Button styles */
@@ -717,42 +683,6 @@
     .feedback-link a {
       color: white;
       text-decoration: underline;
-    }
-    
-    /* Arrow heads */
-    :global(.arrow-head) {
-      position: absolute;
-      width: 0;
-      height: 0;
-      border-style: solid;
-    }
-    
-    :global(.arrow-top) {
-      top: -6px;
-      left: -4px;
-      border-width: 0 5px 8px 5px;
-      border-color: transparent transparent #4c2c69 transparent;
-    }
-    
-    :global(.arrow-bottom) {
-      bottom: -6px;
-      left: -4px;
-      border-width: 8px 5px 0 5px;
-      border-color: #4c2c69 transparent transparent transparent;
-    }
-    
-    :global(.arrow-left) {
-      left: -6px;
-      top: -4px;
-      border-width: 5px 8px 5px 0;
-      border-color: transparent #4c2c69 transparent transparent;
-    }
-    
-    :global(.arrow-right) {
-      right: -6px;
-      top: -4px;
-      border-width: 5px 0 5px 8px;
-      border-color: transparent transparent transparent #4c2c69;
     }
     
     /* Responsive styles */

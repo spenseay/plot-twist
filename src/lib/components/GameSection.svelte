@@ -3,6 +3,7 @@
     import { getContrastYIQ } from '$lib/utils/colorUtils.js';
     import { adjustYAxisArrow } from '$lib/utils/axisUtils.js';
     import gameStore from '$lib/stores/gameStore.js';
+    import GraphContainer from '$lib/components/Graph/GraphContainer.svelte';
   
     // Set up event dispatcher to communicate with parent
     const dispatch = createEventDispatcher();
@@ -50,10 +51,7 @@
     }
     
     onMount(() => {
-      // Adjust the axes arrows on mount
-      setTimeout(() => {
-        adjustYAxisArrow(graphContainer);
-      }, 50);
+      // No need to adjust the arrow here anymore as GraphContainer handles it
     });
   
     function startPlayerTurn() {
@@ -129,7 +127,6 @@
       // Ensure styles are applied and layout is calculated
       setTimeout(() => {
         updatePinStatus();
-        adjustYAxisArrow(graphContainer);
       }, 50);
     }
   
@@ -358,25 +355,12 @@
     <div class="pins-status {pinsStatusClass}" bind:this={pinsStatusElement}>
       {pinsStatusText}
     </div>
-    <div class="graph-container" bind:this={graphContainer}>
-      <!-- Axis labels -->
-      <div class="axis-label x-axis-start">{axes.x.start}</div>
-      <div class="axis-label x-axis-end">{axes.x.end}</div>
-      <div class="axis-label y-axis-start">{axes.y.start}</div>
-      <div class="axis-label y-axis-end">{axes.y.end}</div>
-  
-      <!-- The Y axis arrow -->
-      <div class="axis-arrow y-axis-arrow">
-        <div class="arrow-head arrow-top"></div>
-        <div class="arrow-head arrow-bottom"></div>
-      </div>
-      
-      <!-- X axis arrow -->
-      <div class="axis-arrow x-axis-arrow">
-        <div class="arrow-head arrow-left"></div>
-        <div class="arrow-head arrow-right"></div>
-      </div>
-    </div>
+    
+    <!-- Use the new GraphContainer component -->
+    <GraphContainer bind:containerRef={graphContainer} {axes}>
+      <!-- Pins will be added dynamically to the graph container -->
+    </GraphContainer>
+    
     <div class="button-group" style="justify-content:center;">
       <button on:click={confirmPlacement} disabled={!allPinsPlaced}>Confirm Placement</button>
     </div>
@@ -393,17 +377,6 @@
     /* Game play section */
     .game-section {
       background-color: white;
-    }
-  
-    /* Graph container */
-    .graph-container {
-      position: relative;
-      width: 100%;
-      max-width: 350px;
-      aspect-ratio: 1 / 1;
-      margin: 0 auto;
-      border: 2px solid #4c2c69;
-      border-radius: 4px;
     }
   
     /* Pins container */
@@ -518,104 +491,6 @@
     .pins-status.all-placed {
       background-color: #a6d3a0;
       color: #2a6b34;
-    }
-  
-    /* Axis labels */
-    :global(.axis-label) {
-      position: absolute;
-      font-weight: bold;
-      color: #4c2c69;
-      z-index: 5;
-      font-size: 12px;
-      padding: 3px;
-      background-color: rgba(255,255,255,0.7);
-      border-radius: 3px;
-      text-align: center;
-      max-width: 100px;
-    }
-    
-    /* X axis labels */
-    :global(.x-axis-start) {
-      left: 10px;
-      bottom: calc(50% + 15px);
-    }
-    
-    :global(.x-axis-end) {
-      right: 10px;
-      bottom: calc(50% + 15px);
-    }
-  
-    /* Y axis labels */
-    :global(.y-axis-start) {
-      left: 50%;
-      bottom: 10px;
-      transform: translateX(-50%);
-    }
-    
-    :global(.y-axis-end) {
-      left: 50%;
-      top: 10px;
-      transform: translateX(-50%);
-    }
-  
-    /* The arrow line itself */
-    :global(.y-axis-arrow) {
-      position: absolute;
-      pointer-events: none;
-      left: 50%;
-      width: 2px;
-      transform: translateX(-50%);
-      background-color: #4c2c69;
-      top: 30px;
-      bottom: 30px;
-    }
-  
-    /* X axis arrow */
-    :global(.x-axis-arrow) {
-      position: absolute;
-      pointer-events: none;
-      top: 50%;
-      left: 50px;
-      right: 50px;
-      height: 2px;
-      transform: translateY(-50%);
-      background-color: #4c2c69;
-    }
-  
-    /* Arrow heads */
-    :global(.arrow-head) {
-      position: absolute;
-      width: 0;
-      height: 0;
-      border-style: solid;
-    }
-    
-    :global(.arrow-top) {
-      top: -6px;
-      left: -4px;
-      border-width: 0 5px 8px 5px;
-      border-color: transparent transparent #4c2c69 transparent;
-    }
-    
-    :global(.arrow-bottom) {
-      bottom: -6px;
-      left: -4px;
-      border-width: 8px 5px 0 5px;
-      border-color: #4c2c69 transparent transparent transparent;
-    }
-    
-    :global(.arrow-left) {
-      left: -6px;
-      top: -4px;
-      border-width: 5px 8px 5px 0;
-      border-color: transparent #4c2c69 transparent transparent;
-    }
-    
-    :global(.arrow-right) {
-      right: -6px;
-      top: -4px;
-      border-width: 5px 0 5px 8px;
-      border-color: transparent transparent transparent #4c2c69;
     }
   
     /* Button styles */
