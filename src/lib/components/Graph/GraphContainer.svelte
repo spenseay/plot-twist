@@ -29,14 +29,12 @@
     <Axis 
       type="x" 
       start={axes.x.start} 
-      end={axes.x.end} 
-      {containerRef} />
+      end={axes.x.end} />
     
     <Axis 
       type="y" 
       start={axes.y.start} 
-      end={axes.y.end} 
-      {containerRef} />
+      end={axes.y.end} />
     
     <!-- Slot for pins or other content -->
     <slot></slot>

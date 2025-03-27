@@ -3,7 +3,6 @@
     export let type = 'x'; // 'x' or 'y'
     export let start = ''; // Start label text
     export let end = '';   // End label text
-    export let containerRef = null; // Reference to parent container
     
     // Classes for positioning
     $: startClass = type === 'x' ? 'x-axis-start' : 'y-axis-start';
