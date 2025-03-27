@@ -6,6 +6,7 @@
     import gameStore from '$lib/stores/gameStore.js';
     import { get } from 'svelte/store';
     import GraphContainer from '$lib/components/Graph/GraphContainer.svelte';
+    import FilterButtons from '$lib/components/UI/FilterButtons.svelte';
   
     // Set up event dispatcher to communicate with parent
     const dispatch = createEventDispatcher();
@@ -20,7 +21,6 @@
     
     // DOM references
     let finalScoresTableElement;
-    let playerFilterButtonsElement;
     let collectivePlacementsContainerElement;
     let graphContainerRef = null; // This will hold the actual container DOM element
     
@@ -42,7 +42,6 @@
     
     // When the filter changes, update the chart
     $: if (selectedFilter && isInitialized) {
-      updatePlayerFilterButtons();
       renderPins();
       addPlayerSpecificScoreboard();
     }
@@ -50,9 +49,6 @@
     onMount(async () => {
       // Initialize once mounted
       await tick();
-      
-      // Create filter buttons
-      createPlayerFilterButtons();
       
       // Wait for next tick to ensure container is rendered
       await tick();
@@ -63,6 +59,12 @@
         isInitialized = true;
       }
     });
+    
+    // Handle filter change event from FilterButtons component
+    function handleFilterChanged(event) {
+      console.log('Filter changed to:', event.detail.filter);
+      // No need to update the store here since it's done inside the FilterButtons component
+    }
     
     // Calculate final scores based on player placements
     function calculateFinalScores() {
@@ -93,73 +95,6 @@
       });
       
       return scores;
-    }
-    
-    // Create player filter buttons
-    function createPlayerFilterButtons() {
-      if (!playerFilterButtonsElement) return;
-      
-      playerFilterButtonsElement.innerHTML = '';
-      
-      // All button
-      const allButton = document.createElement('div');
-      allButton.className = 'player-filter-button all-button' + (selectedFilter === 'all' ? ' active' : '');
-      allButton.textContent = 'All';
-      allButton.onclick = () => {
-        // Update the store
-        gameStore.update(state => ({
-          ...state,
-          selectedFilter: 'all'
-        }));
-      };
-      playerFilterButtonsElement.appendChild(allButton);
-      
-      // Player buttons
-      players.forEach((p, i) => {
-        const btn = document.createElement('div');
-        btn.className = 'player-filter-button' + (selectedFilter === p ? ' active' : '');
-        btn.textContent = p;
-        const c = playerColors[i % playerColors.length];
-        btn.style.backgroundColor = c;
-        
-        if (getContrastYIQ(c) < 128) {
-          btn.style.color = 'white';
-        } else {
-          btn.style.color = '#4c2c69';
-        }
-        
-        btn.onclick = () => {
-          // Update the store
-          gameStore.update(state => ({
-            ...state,
-            selectedFilter: p
-          }));
-        };
-        
-        playerFilterButtonsElement.appendChild(btn);
-      });
-    }
-    
-    // Update player filter buttons active state
-    function updatePlayerFilterButtons() {
-      if (!playerFilterButtonsElement) return;
-      
-      const buttons = playerFilterButtonsElement.querySelectorAll('.player-filter-button');
-      buttons.forEach(btn => {
-        if (btn.classList.contains('all-button')) {
-          if (selectedFilter === 'all') {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        } else {
-          if (btn.textContent === selectedFilter) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        }
-      });
     }
     
     // Render pins on the graph
@@ -457,10 +392,13 @@
     
     <h3>Everyone's Placements</h3>
   
-    <!-- Player filter buttons -->
+    <!-- Player filter buttons - now using our new FilterButtons component -->
     <div class="player-filter-container">
       <div class="player-filter-heading">View where people placed:</div>
-      <div class="player-filter-buttons" bind:this={playerFilterButtonsElement}></div>
+      <FilterButtons 
+        buttonColors={playerColors}
+        on:filterChanged={handleFilterChanged}
+      />
     </div>
   
     <div id="collective-placements-container" 
@@ -620,45 +558,6 @@
       font-size: 16px;
     }
     
-    .player-filter-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-    }
-    
-    /* Player filter button styles */
-    :global(.player-filter-button) {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.2s ease;
-      min-width: 70px;
-      text-align: center;
-      font-size: 12px;
-    }
-    
-    :global(.player-filter-button:hover) {
-      transform: translateY(-2px);
-      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-    }
-    
-    :global(.player-filter-button.active) {
-      border: 2px solid #4c2c69;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    
-    :global(.player-filter-button.all-button) {
-      background-color: #4c2c69;
-      color: white;
-    }
-    
-    :global(.player-filter-button.all-button.active) {
-      border: 2px solid #fdc30f;
-    }
-    
     /* Placements container */
     .collective-placements-container {
       background-color: white;
@@ -694,11 +593,6 @@
       
       table {
         font-size: 14px;
-      }
-      
-      :global(.player-filter-button) {
-        font-size: 13px;
-        padding: 6px 12px;
       }
     }
     
