@@ -6,6 +6,9 @@
   // Set up event dispatcher to communicate with parent
   const dispatch = createEventDispatcher();
   
+  // Reference to the PlayerList component
+  let playerListComponent;
+  
   // Subscribe to game store for player data
   $: players = $gameStore?.players || [];
 
@@ -34,6 +37,11 @@
     // Additional logic can be added here if needed
     console.log('All players cleared');
   }
+  
+  // Clear all players using the PlayerList component's method
+  function clearPlayers() {
+    playerListComponent.clearPlayers();
+  }
 </script>
 
 <div class="setup-section section">
@@ -42,8 +50,9 @@
     <p>Enter the names of all players who will participate.</p>
   </div>
   
-  <!-- Use our new PlayerList component -->
+  <!-- Use our new PlayerList component with a reference -->
   <PlayerList 
+    bind:this={playerListComponent}
     on:playerAdded={handlePlayerAdded}
     on:playerRemoved={handlePlayerRemoved}
     on:playersCleared={handlePlayersCleared}
@@ -55,6 +64,15 @@
       disabled={players.length < 2}
     >
       Start Game
+    </button>
+    
+    <!-- Clear All button moved here to be aligned with Start Game -->
+    <button 
+      class="secondary"
+      on:click={clearPlayers}
+      disabled={players.length === 0}
+    >
+      Clear All
     </button>
   </div>
 </div>

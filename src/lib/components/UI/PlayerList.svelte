@@ -47,8 +47,8 @@
       dispatch('playerRemoved', { player: playerName, index });
     }
   
-    // Clear all players
-    function clearPlayers() {
+    // Expose clearPlayers as a method that can be called from parent components
+    export function clearPlayers() {
       actions.clearPlayers();
       dispatch('playersCleared');
     }
@@ -97,16 +97,8 @@
       {/each}
     </div>
     
-    {#if showControls && players.length > 0}
-      <div class="player-list-controls">
-        <button 
-          class="clear-btn secondary"
-          on:click={clearPlayers}
-        >
-          Clear All
-        </button>
-      </div>
-    {/if}
+    <!-- Removed the Clear All button from this component -->
+    <!-- It will be handled by the parent component to ensure proper alignment -->
   </div>
   
   <style>
