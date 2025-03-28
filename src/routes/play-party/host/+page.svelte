@@ -7,6 +7,9 @@
     let isCreating = false;
     let error = null;
     
+    // Reference for the host name input element
+    let hostNameInput;
+    
     // Go back to party mode menu
     function goBack() {
       goto('/play-party');
@@ -33,7 +36,7 @@
             isHost: true
           }));
           
-          // Redirect to waiting room (we'll create this next)
+          // Redirect to waiting room
           goto(`/play-party/host/waiting?room=${result.roomCode}`);
         } else {
           error = result.error || "Failed to create room";
@@ -45,8 +48,13 @@
         isCreating = false;
       }
     }
+    
+    // Set focus on the host name input when the component mounts
+    onMount(() => {
+      hostNameInput.focus();
+    });
   </script>
-  
+    
   <div class="container">
     <div class="header">
       <button class="back-button" on:click={goBack}>← Back</button>
@@ -67,11 +75,11 @@
           <input 
             type="text"
             id="hostName"
+            bind:this={hostNameInput}
             bind:value={hostName}
             placeholder="Enter your name"
             maxlength="20"
             required
-            autofocus
           />
         </div>
         
@@ -90,7 +98,7 @@
       </div>
     </div>
   </div>
-  
+    
   <style>
     .container {
       max-width: 600px;
@@ -240,3 +248,4 @@
       }
     }
   </style>
+  

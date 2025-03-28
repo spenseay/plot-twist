@@ -8,6 +8,9 @@
     let isJoining = false;
     let error = null;
     
+    // Reference for the room code input element
+    let roomCodeInput;
+    
     // Format room code to uppercase
     function formatRoomCode() {
       roomCode = roomCode.toUpperCase();
@@ -51,8 +54,13 @@
         isJoining = false;
       }
     }
+    
+    // Set focus on the room code input when the component mounts
+    onMount(() => {
+      roomCodeInput.focus();
+    });
   </script>
-  
+    
   <div class="container">
     <div class="header">
       <button class="back-button" on:click={goBack}>← Back</button>
@@ -73,12 +81,12 @@
           <input 
             type="text"
             id="roomCode"
+            bind:this={roomCodeInput}
             bind:value={roomCode}
             on:input={formatRoomCode}
             placeholder="Enter 4-letter code"
             maxlength="4"
             required
-            autofocus
           />
           <div class="input-help">Ask the host for the room code</div>
         </div>
@@ -110,7 +118,7 @@
       </div>
     </div>
   </div>
-  
+    
   <style>
     .container {
       max-width: 600px;
@@ -276,3 +284,4 @@
       }
     }
   </style>
+  

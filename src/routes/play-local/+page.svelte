@@ -173,10 +173,11 @@
     h1 {
       font-size: 24px;
     }
-    
+    /*
     h2 {
       font-size: 20px;
     }
+      */
     
     .back-button {
       font-size: 0.9rem;
