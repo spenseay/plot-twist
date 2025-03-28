@@ -17,37 +17,41 @@
     
     // Create a new room
     async function hostGame() {
-      if (!hostName.trim()) {
-        error = "Please enter your name";
-        return;
-      }
+  if (!hostName.trim()) {
+    error = "Please enter your name";
+    return;
+  }
+  
+  isCreating = true;
+  error = null;
+  
+  try {
+    console.log("Creating room with host name:", hostName);
+    const result = await createRoom(hostName);
+    
+    if (result.success) {
+      // Save room info to localStorage for persistence
+      const sessionData = {
+        roomCode: result.roomCode,
+        playerName: hostName,
+        isHost: true
+      };
       
-      isCreating = true;
-      error = null;
+      console.log("Saving session data:", sessionData);
+      localStorage.setItem('ptGameHost', JSON.stringify(sessionData));
       
-      try {
-        const result = await createRoom(hostName);
-        
-        if (result.success) {
-          // Save room info to localStorage for persistence
-          localStorage.setItem('ptGameHost', JSON.stringify({
-            roomCode: result.roomCode,
-            playerName: hostName,
-            isHost: true
-          }));
-          
-          // Redirect to waiting room
-          goto(`/play-party/host/waiting?room=${result.roomCode}`);
-        } else {
-          error = result.error || "Failed to create room";
-        }
-      } catch (err) {
-        console.error("Error hosting game:", err);
-        error = "An unexpected error occurred";
-      } finally {
-        isCreating = false;
-      }
+      // Redirect to waiting room
+      goto(`/play-party/host/waiting?room=${result.roomCode}`);
+    } else {
+      error = result.error || "Failed to create room";
     }
+  } catch (err) {
+    console.error("Error hosting game:", err);
+    error = "An unexpected error occurred";
+  } finally {
+    isCreating = false;
+  }
+}
     
     // Set focus on the host name input when the component mounts
     onMount(() => {

@@ -2,6 +2,8 @@
     import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
+    import { database } from '$lib/firebase/config.js';
+    import { ref, update, get } from 'firebase/database';
     import { subscribeToRoom } from '$lib/firebase/rooms.js';
     
     // Room information
@@ -18,7 +20,7 @@
     
     // Load session from localStorage
     onMount(() => {
-      // Get room from URL parameters (alternative approach)
+      // Get room from URL parameters
       if ($page.url.searchParams.has('room')) {
         roomCode = $page.url.searchParams.get('room');
       }
@@ -92,35 +94,6 @@
           players = [];
         }
       });
-    }
-    
-    // Start the game (host only)
-    async function startGame() {
-      if (!canStart || isStarting) return;
-      
-      isStarting = true;
-      
-      try {
-        // Update room status to 'playing'
-        const response = await fetch(`/api/rooms/${roomCode}/start`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ hostName: playerName })
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Failed to start game');
-        }
-        
-        // We'll be redirected when the room status changes
-      } catch (err) {
-        console.error('Error starting game:', err);
-        error = err.message || 'Error starting game';
-        isStarting = false;
-      }
     }
     
     // Copy room code to clipboard
@@ -211,13 +184,22 @@
           <div class="host-controls">
             <button 
               class="start-button"
-              disabled={!canStart || isStarting}
-              on:click={startGame}
+              disabled={!canStart}
+              on:click={() => {
+                const roomRef = ref(database, `rooms/${roomCode}`);
+                update(roomRef, {
+                  status: 'playing',
+                  startedAt: Date.now()
+                })
+                .then(() => console.log("Game started successfully"))
+                .catch(err => {
+                  console.error("Error:", err);
+                  error = err.message;
+                });
+              }}
             >
               {#if !canStart}
                 Need at least 2 players
-              {:else if isStarting}
-                Starting...
               {:else}
                 Start Game
               {/if}
