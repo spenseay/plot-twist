@@ -1,30 +1,18 @@
 // src/lib/firebase/config.js
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { browser } from '$app/environment';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB56MLjc5-NHLEEC7ZT1eMSxaRyiJV99-k",
-  authDomain: "plot-twist-game.firebaseapp.com",
-  databaseURL: "https://plot-twist-game-default-rtdb.firebaseio.com", // Added this line
-  projectId: "plot-twist-game",
-  storageBucket: "plot-twist-game.appspot.com",
-  messagingSenderId: "998525398652",
-  appId: "1:998525398652:web:ab763af390c93bc011e3f9",
-  measurementId: "G-QNK1THZBQ7"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only in the browser
-let app;
-let database;
-
-if (browser) {
-  app = initializeApp(firebaseConfig);
-  database = getDatabase(app);
-  
-  // Only initialize analytics in the browser if needed
-  // const analytics = getAnalytics(app);
-}
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 export { app, database };

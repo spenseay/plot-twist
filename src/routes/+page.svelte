@@ -217,6 +217,17 @@
     color: #4c2c69;
   }
   
+  /* Add hover and active states for party mode button */
+  .party-mode:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 0 #d9a40b, 0 8px 15px rgba(253, 195, 15, 0.4);
+  }
+  
+  .party-mode:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #d9a40b, 0 3px 5px rgba(253, 195, 15, 0.3);
+  }
+  
   .daily-mode {
     background-color: #a6d3a0;
     box-shadow: 0 4px 0 #85b57e, 0 5px 10px rgba(166, 211, 160, 0.3);
