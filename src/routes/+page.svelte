@@ -23,12 +23,12 @@
       </div>
     </button>
     
-    <button class="menu-button party-mode disabled">
+    <button class="menu-button party-mode" on:click={() => navigateTo('/play-party')}>
       <div class="button-content">
         <div class="emoji">🎉</div>
         <div class="text-content">
           <span class="button-text">Party Mode</span>
-          <span class="button-description">Coming soon - Play on separate devices</span>
+          <span class="button-description">Play together on separate devices</span>
         </div>
       </div>
     </button>
