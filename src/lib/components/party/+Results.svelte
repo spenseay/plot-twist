@@ -1,5 +1,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import { getContrastYIQ } from '$lib/utils/colorUtils.js';
+    import { calculateDistance } from '$lib/utils/mathUtils.js';
     
     // Props
     export let scores = {};
@@ -57,21 +59,22 @@
       const selectedP = isFiltering ? selectedFilter : null;
       
       // Render pins for each player
-      players.forEach((person, pIdx) => {
+      const playerNames = players.map(p => p.name);
+      playerNames.forEach((person, pIdx) => {
         const personColor = playerColors[pIdx % playerColors.length];
         
         // Skip if filtering and not the selected player
-        if (isFiltering && person.name !== selectedP) {
+        if (isFiltering && person !== selectedP) {
           // Show dimmed pins
-          players.forEach(placer => {
-            const playerData = placements[placer.name];
+          playerNames.forEach(placer => {
+            const playerData = placements[placer];
             if (!playerData) return;
             
-            const place = playerData[person.name];
+            const place = playerData[person];
             if (!place) return;
             
             createPin({
-              name: person.name,
+              name: person,
               x: place.x,
               y: place.y,
               color: personColor,
@@ -83,24 +86,33 @@
         }
         
         // If not filtering or it's the selected player
-        players.forEach(placer => {
-          const playerData = placements[placer.name];
+        playerNames.forEach(placer => {
+          const playerData = placements[placer];
           if (!playerData) return;
           
-          const place = playerData[person.name];
+          const place = playerData[person];
           if (!place) return;
           
           createPin({
-            name: isFiltering && person.name === selectedP ? placer.name : person.name,
+            name: isFiltering && person === selectedP ? placer : person,
             x: place.x,
             y: place.y,
             color: personColor,
-            isSelf: placer.name === person.name,
-            scale: placer.name === person.name ? 1 : 0.8,
-            zIndex: placer.name === person.name ? 20 : 10
+            isSelf: placer === person,
+            scale: placer === person ? 1 : 0.8,
+            zIndex: placer === person ? 20 : 10
           });
         });
       });
+      
+      // If filtering by a player, add player-specific scoreboard
+      if (isFiltering && selectedP) {
+        addPlayerSpecificScoreboard(selectedP);
+      } else {
+        // Remove any existing player-specific scoreboards
+        const scoreboards = document.querySelectorAll('.player-scoreboard');
+        scoreboards.forEach(sb => sb.remove());
+      }
     }
     
     // Create a pin element
@@ -114,19 +126,130 @@
       pin.style.left = (x * 100) + '%';
       pin.style.top = (y * 100) + '%';
       pin.style.backgroundColor = color;
+      pin.style.color = getContrastYIQ(color.replace('#', '')) < 128 ? 'white' : '#4c2c69';
       pin.style.transform = `translate(-50%, -50%) scale(${scale})`;
       pin.style.opacity = opacity;
       pin.style.zIndex = zIndex;
-      
-      // For self-placements
-      if (isSelf) {
-        pin.style.boxShadow = '0 0 0 3px white, 2px 2px 5px rgba(0,0,0,0.3)';
-      }
+      pin.style.minWidth = '70px';
+      pin.style.maxWidth = '100px';
+      pin.style.width = 'auto';
+      pin.style.height = '34px';
+      pin.style.padding = '6px 8px';
+      pin.style.display = 'flex';
+      pin.style.justifyContent = 'center';
+      pin.style.alignItems = 'center';
+      pin.style.margin = '0';
+      pin.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+      pin.style.fontSize = '12px';
+      pin.style.fontWeight = 'bold';
+      pin.style.borderRadius = '2px';
+      pin.style.boxShadow = isSelf 
+        ? '0 0 0 3px white, 2px 2px 5px rgba(0,0,0,0.3)' 
+        : '2px 2px 5px rgba(0,0,0,0.2)';
+      pin.style.whiteSpace = 'nowrap';
+      pin.style.overflow = 'hidden';
+      pin.style.textAlign = 'center';
       
       // Add to container
       graphContainerRef.appendChild(pin);
       
       return pin;
+    }
+    
+    // Add player-specific scoreboard
+    function addPlayerSpecificScoreboard(selectedPlayer) {
+      // Remove any existing player scoreboards
+      const existingScoreboards = document.querySelectorAll('.player-scoreboard');
+      existingScoreboards.forEach(sb => sb.remove());
+      
+      // Get self placement
+      const spData = placements[selectedPlayer];
+      if (!spData || !spData[selectedPlayer]) return;
+      
+      const selfPlace = spData[selectedPlayer];
+      
+      // Create scoreboard container
+      const container = document.querySelector('.results-container');
+      if (!container) return;
+      
+      const scoreboardContainer = document.createElement('div');
+      scoreboardContainer.className = 'player-scoreboard';
+      
+      const title = document.createElement('h3');
+      title.textContent = `Who knows ${selectedPlayer} best?`;
+      scoreboardContainer.appendChild(title);
+      
+      // Calculate individual scores
+      const playerScores = [];
+      const playerNames = players.map(p => p.name);
+      
+      playerNames.forEach(player => {
+        if (player === selectedPlayer) return;
+        
+        const playerData = placements[player];
+        if (!playerData || !playerData[selectedPlayer]) return;
+        
+        const placement = playerData[selectedPlayer];
+        const dist = calculateDistance(selfPlace, placement);
+        const maxDist = Math.sqrt(2);
+        const score = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
+        
+        playerScores.push({ player, score });
+      });
+      
+      // Sort by score
+      playerScores.sort((a, b) => b.score - a.score);
+      
+      // Create table
+      const table = document.createElement('table');
+      table.className = 'scoreboard-table';
+      
+      // Create header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      
+      const rankHeader = document.createElement('th');
+      rankHeader.textContent = 'Rank';
+      headerRow.appendChild(rankHeader);
+      
+      const playerHeader = document.createElement('th');
+      playerHeader.textContent = 'Player';
+      headerRow.appendChild(playerHeader);
+      
+      const scoreHeader = document.createElement('th');
+      scoreHeader.textContent = 'Points';
+      headerRow.appendChild(scoreHeader);
+      
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      
+      // Create body
+      const tbody = document.createElement('tbody');
+      
+      playerScores.forEach((score, index) => {
+        const row = document.createElement('tr');
+        if (index === 0) row.className = 'winner';
+        
+        const rankCell = document.createElement('td');
+        rankCell.textContent = index + 1;
+        row.appendChild(rankCell);
+        
+        const playerCell = document.createElement('td');
+        playerCell.textContent = score.player;
+        row.appendChild(playerCell);
+        
+        const scoreCell = document.createElement('td');
+        scoreCell.textContent = `${score.score} points`;
+        row.appendChild(scoreCell);
+        
+        tbody.appendChild(row);
+      });
+      
+      table.appendChild(tbody);
+      scoreboardContainer.appendChild(table);
+      
+      // Append to container
+      container.appendChild(scoreboardContainer);
     }
     
     // Return to the menu
@@ -135,40 +258,12 @@
     }
     
     // After component is mounted, render pins
-    function afterRender() {
-      if (graphContainerRef) {
-        renderPins();
-        adjustYAxisArrow();
-      }
-    }
-    
-    // Adjust the Y-axis arrow
-    function adjustYAxisArrow() {
-      if (!graphContainerRef) return;
-      
-      const yAxisEndLabel = graphContainerRef.querySelector('.y-axis-end');
-      const yAxisStartLabel = graphContainerRef.querySelector('.y-axis-start');
-      const yAxisArrow = graphContainerRef.querySelector('.y-axis-arrow');
-      
-      if (!yAxisEndLabel || !yAxisStartLabel || !yAxisArrow) return;
-      
-      const margin = 5;
-      const containerRect = graphContainerRef.getBoundingClientRect();
-      const endRect = yAxisEndLabel.getBoundingClientRect();
-      const startRect = yAxisStartLabel.getBoundingClientRect();
-      
-      const arrowTop = (endRect.bottom - containerRect.top) + margin;
-      const arrowBottom = (containerRect.bottom - startRect.top) + margin;
-      
-      yAxisArrow.style.top = arrowTop + 'px';
-      yAxisArrow.style.bottom = arrowBottom + 'px';
-    }
-    
-    // Make sure to render pins after the component is mounted
     import { onMount } from 'svelte';
     
     onMount(() => {
-      afterRender();
+      if (graphContainerRef) {
+        renderPins();
+      }
     });
   </script>
   
@@ -177,7 +272,7 @@
     
     <!-- Scoreboard -->
     <div class="scoreboard">
-      <table>
+      <table class="scoreboard-table">
         <thead>
           <tr>
             <th>Rank</th>
@@ -249,10 +344,7 @@
         </div>
         
         <!-- X-axis arrow -->
-        <div class="axis-arrow x-axis-arrow" style="
-          position: absolute; top: 50%; left: 50px; right: 50px;
-          height: 2px; transform: translateY(-50%);
-          background-color: #4c2c69; pointer-events: none;">
+        <div class="axis-arrow x-axis-arrow">
           <div class="arrow-head arrow-left"></div>
           <div class="arrow-head arrow-right"></div>
         </div>
@@ -261,25 +353,7 @@
       </div>
     </div>
     
-    <!-- Player-specific scoreboard when filtering -->
-    {#if selectedFilter !== 'all'}
-      <div class="player-scoreboard">
-        <h3>Who knows {selectedFilter} best?</h3>
-        
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Points</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- We'll calculate individual scores in the next iteration -->
-          </tbody>
-        </table>
-      </div>
-    {/if}
+    <!-- Player-specific scoreboard will be added here dynamically -->
     
     <div class="feedback-section">
       <p>Thanks for playing Plot Twist, please give us some feedback</p>
@@ -319,7 +393,7 @@
       margin-bottom: 20px;
     }
     
-    table {
+    .scoreboard-table {
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
@@ -488,6 +562,14 @@
       bottom: 30px;
     }
     
+    .x-axis-arrow {
+      top: 50%;
+      left: 50px;
+      right: 50px;
+      height: 2px;
+      transform: translateY(-50%);
+    }
+    
     /* Arrow heads */
     .arrow-head {
       position: absolute;
@@ -524,39 +606,18 @@
       border-color: transparent transparent transparent #4c2c69;
     }
     
-    /* Pin styles */
-    :global(.graph-container .pin) {
-      position: absolute;
-      min-width: 70px;
-      padding: 6px 8px;
-      background-color: #fdc30f;
-      color: #4c2c69;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-      cursor: pointer;
-      transform: translate(-50%, -50%);
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-      user-select: none;
-      overflow: hidden;
-      white-space: nowrap;
-      text-align: center;
-      font-size: 12px;
-      border-radius: 2px;
-    }
-    
     /* Player scoreboard */
-    .player-scoreboard {
+    :global(.player-scoreboard) {
       background-color: white;
       padding: 15px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin: 20px 0;
     }
     
-    .player-scoreboard h3 {
+    :global(.player-scoreboard h3) {
       color: #4c2c69 !important;
       margin-top: 0;
+      text-align: center;
     }
     
     /* Feedback section */

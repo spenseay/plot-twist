@@ -1,8 +1,9 @@
 // src/lib/firebase/rooms.js
 import { database } from './config.js';
-import { ref, set, get, onValue } from 'firebase/database';
+import { ref, set, get, update, onValue } from 'firebase/database';
 import { selectRandomAxes } from '$lib/utils/axisUtils.js';
 import { axisOptions } from '$lib/data/axisOptions.js';
+import { calculateDistance } from '$lib/utils/mathUtils.js';
 
 // Generate a random room code (4 uppercase letters/numbers)
 export function generateRoomCode() {
@@ -19,6 +20,25 @@ export async function createRoom(hostName) {
   try {
     // Generate a room code
     let roomCode = generateRoomCode();
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    // Check if room code already exists
+    while (attempts < maxAttempts) {
+      const existingRoom = await get(ref(database, `rooms/${roomCode}`));
+      if (!existingRoom.exists()) {
+        break;
+      }
+      roomCode = generateRoomCode();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      return { success: false, error: 'Failed to generate a unique room code' };
+    }
+    
+    // Generate random axes
+    const randomAxes = selectRandomAxes(axisOptions);
     
     // Generate initial game state
     const roomData = {
@@ -29,11 +49,15 @@ export async function createRoom(hostName) {
       players: {
         [hostName]: {
           isHost: true,
-          joinedAt: Date.now()
+          joinedAt: Date.now(),
+          hasSubmitted: false
         }
       },
       settings: {
-        axes: selectRandomAxes(axisOptions)
+        axes: randomAxes
+      },
+      placements: {
+        [hostName]: {} // Initialize empty placements for host
       }
     };
     
@@ -51,6 +75,9 @@ export async function createRoom(hostName) {
 // Join an existing room
 export async function joinRoom(roomCode, playerName) {
   try {
+    // Format room code to uppercase
+    roomCode = roomCode.toUpperCase();
+    
     // Check if room exists
     const roomRef = ref(database, `rooms/${roomCode}`);
     const snapshot = await get(roomRef);
@@ -62,7 +89,7 @@ export async function joinRoom(roomCode, playerName) {
     const roomData = snapshot.val();
     
     // Check if game already started
-    if (roomData.status === 'playing') {
+    if (roomData.status === 'playing' || roomData.status === 'completed') {
       return { success: false, error: 'Game already in progress' };
     }
     
@@ -75,8 +102,13 @@ export async function joinRoom(roomCode, playerName) {
     const playerRef = ref(database, `rooms/${roomCode}/players/${playerName}`);
     await set(playerRef, {
       isHost: false,
-      joinedAt: Date.now()
+      joinedAt: Date.now(),
+      hasSubmitted: false
     });
+    
+    // Add empty placements object for this player
+    const placementsRef = ref(database, `rooms/${roomCode}/placements/${playerName}`);
+    await set(placementsRef, {});
     
     return { roomCode, success: true };
   } catch (error) {
@@ -94,113 +126,24 @@ export function subscribeToRoom(roomCode, callback) {
     } else {
       callback({ exists: false });
     }
+  }, (error) => {
+    console.error('Error subscribing to room:', error);
+    callback({ exists: false, error: error.message });
   });
 }
 
-// Create initial placements structure
-export function initializePlacements(roomCode, players) {
-  const placementsRef = ref(database, `rooms/${roomCode}/placements`);
-  
-  // Create empty placement object for each player
-  const placements = {};
-  players.forEach(player => {
-    placements[player] = {};
-  });
-  
-  return set(placementsRef, placements);
-}
-
-// Submit player placements
-export async function submitPlacements(roomCode, playerName, placements) {
+// Start game
+export async function startGame(roomCode) {
   try {
-    // Update player status
-    const playerRef = ref(database, `rooms/${roomCode}/players/${playerName}`);
-    await update(playerRef, { hasSubmitted: true });
-    
-    // Update placements
-    const placementsRef = ref(database, `rooms/${roomCode}/placements/${playerName}`);
-    await set(placementsRef, placements);
-    
-    // Check if all players have submitted
     const roomRef = ref(database, `rooms/${roomCode}`);
-    const snapshot = await get(roomRef);
-    
-    if (snapshot.exists()) {
-      const roomData = snapshot.val();
-      const allSubmitted = Object.values(roomData.players).every(p => p.hasSubmitted);
-      
-      if (allSubmitted) {
-        // Update room status to completed
-        await update(roomRef, {
-          status: 'completed',
-          completedAt: Date.now()
-        });
-      }
-    }
+    await update(roomRef, {
+      status: 'playing',
+      startedAt: Date.now()
+    });
     
     return { success: true };
   } catch (error) {
-    console.error('Error submitting placements:', error);
+    console.error('Error starting game:', error);
     return { success: false, error: error.message };
   }
-}
-
-// Get game results
-export async function getGameResults(roomCode) {
-  try {
-    const roomRef = ref(database, `rooms/${roomCode}`);
-    const snapshot = await get(roomRef);
-    
-    if (!snapshot.exists()) {
-      return { success: false, error: 'Room not found' };
-    }
-    
-    const roomData = snapshot.val();
-    
-    if (roomData.status !== 'completed') {
-      return { success: false, error: 'Game not completed yet' };
-    }
-    
-    // Calculate scores based on placements
-    const scores = calculateScores(roomData.placements);
-    
-    return { success: true, scores, placements: roomData.placements };
-  } catch (error) {
-    console.error('Error getting game results:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-// Calculate scores based on placements
-function calculateScores(placements) {
-  const scores = {};
-  const players = Object.keys(placements);
-  
-  // Initialize scores
-  players.forEach(player => {
-    scores[player] = 0;
-  });
-  
-  // Calculate scores
-  players.forEach(person => {
-    const selfPlacement = placements[person][person];
-    if (!selfPlacement) return; // Skip if self-placement missing
-    
-    players.forEach(player => {
-      if (player === person) return; // Skip self
-      
-      const placement = placements[player][person];
-      if (!placement) return; // Skip if placement missing
-      
-      // Calculate distance and score
-      const distance = calculateDistance(selfPlacement, placement);
-      const maxDistance = Math.sqrt(2); // Max distance on a 1x1 grid
-      const score = Math.max(0, Math.round(100 - (distance / maxDistance) * 100));
-      
-      // Add to player's score
-      scores[player] += score;
-    });
-  });
-  
-  return scores;
 }
