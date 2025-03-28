@@ -104,11 +104,14 @@
     // Update the game store with data from Firebase
     function updateGameStore() {
       const playerNames = players.map(p => p.name);
+      // Find the index of the current player in the players array
+      const playerIndex = playerNames.indexOf(playerName);
       
       gameStore.update(state => ({
         ...state,
         players: playerNames,
-        currentTurn: 0,
+        // This is the key change - set currentTurn to this player's index
+        currentTurn: playerIndex !== -1 ? playerIndex : 0,
         axes: axes,
         setupSectionVisible: false,
         gameSectionVisible: !placementsSubmitted,
