@@ -1,4 +1,3 @@
-<!-- src/lib/components/Graph/Axis.svelte -->
 <script>
   // Props
   export let type = 'x'; // 'x' or 'y'
@@ -38,11 +37,11 @@
   font-weight: bold;
   color: #4c2c69;
   z-index: 5;
-  font-size: 16px; /* Increased from 12px */
-  padding: 5px; /* Increased from 3px */
+  font-size: 13px; /* Balanced size for desktop */
+  padding: 5px;
   background-color: rgba(255, 255, 255, 0.7);
   text-align: center;
-  max-width: 130px; /* Increased from 100px */
+  max-width: 120px;
 }
   
 /* X axis labels */
@@ -115,16 +114,17 @@
 /* Responsive styles */
 @media (min-width: 768px) {
   .axis-label {
-    font-size: 18px; /* Increased from 13px */
-    max-width: 150px; /* Increased from 100px */
+    font-size: 14px; /* Slightly larger for medium screens */
+    max-width: 130px;
   }
 }
   
+/* Keep the mobile font size larger for better readability on small screens */
 @media (max-width: 480px) {
   .axis-label {
-    font-size: 14px; /* Increased from 10px */
-    max-width: 110px; /* Increased from 80px */
-    padding: 4px; /* Slight padding for mobile */
+    font-size: 14px;
+    max-width: 110px;
+    padding: 4px;
   }
 }
 </style>
