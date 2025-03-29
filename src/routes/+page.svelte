@@ -150,7 +150,6 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
     pointer-events: none;
   }
   
@@ -164,7 +163,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.2em;
+    font-size: 3.4em;
     margin-right: 15px;
     width: 50px;
     height: 50px;
@@ -270,42 +269,46 @@
     }
   }
   
-  @media (max-width: 480px) {
-    .container {
-      margin: 15px auto;
-      padding: 20px 15px;
-    }
-    
-    h1 {
-      font-size: 2.2em;
-    }
-    
-    .subtitle {
-      font-size: 1em;
-    }
-    
-    .button-content {
-      padding: 12px 15px;
-    }
-    
-    .emoji {
-      font-size: 1.8em;
-      margin-right: 10px;
-      width: 40px;
-      height: 40px;
-    }
-    
-    .button-text {
-      font-size: 1.1em;
-    }
-    
-    .button-description {
-      font-size: 0.8em;
-    }
-    
-    .decoration {
-      width: 70px;
-      height: 70px;
-    }
+  /* Updates for src/routes/+page.svelte */
+/* Find the @media (max-width: 480px) section and replace it with this: */
+
+@media (max-width: 480px) {
+  /* Keep existing properties and add/modify these text-specific ones */
+  
+  .button-text {
+    font-size: 2.6em; /* Much larger button title text */
+    margin-bottom: 8px;
+    line-height: 1.1;
   }
+  
+  .button-description {
+    font-size: 1.6em; /* Much larger description text */
+    line-height: 1.2;
+    opacity: 0.95; /* Make it slightly more visible */
+  }
+  
+  /* Make emoji size match the larger text */
+  .emoji {
+    font-size: 4em;
+    margin-right: 18px;
+    width: 65px;
+    height: 65px;
+  }
+  
+  /* Ensure button height accommodates larger text */
+  .menu-button {
+    min-height: 120px;
+  }
+  
+  /* More padding to accommodate larger text */
+  .button-content {
+    padding: 12px 10px;
+  }
+  
+  /* Make sure disabled button has proper styling */
+  .daily-mode .button-text,
+  .daily-mode .button-description {
+    opacity: 0.7; /* Make disabled text more visible against background */
+  }
+}
 </style>
