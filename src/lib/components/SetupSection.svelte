@@ -147,7 +147,7 @@
   .section {
     margin-bottom: 15px;
     padding: 20px;
-    border-radius: 15px;
+    border-radius: 12px;
     position: relative;
   }
   
@@ -262,6 +262,9 @@
     background-color: #a6d3a0;
     box-shadow: 0 3px 0 #85b57e, 0 4px 6px rgba(166, 211, 160, 0.3);
     transition: all 0.2s;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
   }
   
   :global(.setup-section .player-item:hover) {
@@ -289,6 +292,8 @@
     background-color: #3891a6;
     box-shadow: 0 3px 0 #2a6b7d, 0 4px 6px rgba(56, 145, 166, 0.3);
     transition: all 0.2s;
+    padding: 10px 16px;
+    border-radius: 8px;
   }
   
   :global(.setup-section .add-player-btn:hover) {
@@ -299,6 +304,10 @@
   :global(.setup-section .remove-btn) {
     box-shadow: 0 2px 0 #b73642, 0 3px 5px rgba(219, 84, 97, 0.3);
     transition: all 0.2s;
+    background-color: #db5461;
+    color: white;
+    border-radius: 6px;
+    padding: 5px 10px;
   }
   
   :global(.setup-section .remove-btn:hover) {
