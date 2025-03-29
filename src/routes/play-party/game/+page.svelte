@@ -26,20 +26,34 @@
       if ($page.url.searchParams.has('room')) {
         roomCode = $page.url.searchParams.get('room');
         
-        // Load player data from localStorage
+        // Load player data from localStorage - FIXED VERSION
         try {
           const hostData = localStorage.getItem('ptGameHost');
           const playerData = localStorage.getItem('ptGamePlayer');
           
           if (hostData) {
             const data = JSON.parse(hostData);
-            playerName = data.playerName;
-          } else if (playerData) {
+            // Only use this data if it's for the current room
+            if (data.roomCode === roomCode) {
+              playerName = data.playerName;
+            }
+          } 
+          
+          if (playerData && !playerName) {
             const data = JSON.parse(playerData);
-            playerName = data.playerName;
+            // Only use this data if it's for the current room
+            if (data.roomCode === roomCode) {
+              playerName = data.playerName;
+            }
+          }
+          
+          // If still no valid player name, show error
+          if (!playerName) {
+            error = "Could not determine player name for this room";
           }
         } catch (err) {
           console.error('Error loading player data:', err);
+          error = "Error loading player data: " + err.message;
         }
         
         // Subscribe to room updates
@@ -77,6 +91,11 @@
               if (b.isHost) return 1;
               return a.joinedAt - b.joinedAt;
             });
+            
+            // Validate player is in this room
+            if (!players.some(p => p.name === playerName)) {
+              error = "Your player name was not found in this room";
+            }
           }
           
           // Get axes

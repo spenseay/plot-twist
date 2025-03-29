@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { joinRoom } from '$lib/firebase/rooms.js';
+  import gameStore from '$lib/stores/gameStore.js';
   
   let roomCode = '';
   let playerName = '';
@@ -27,6 +28,19 @@
       error = "Please fill out all fields";
       return;
     }
+    
+    // Reset game store completely and clear any existing game data
+    gameStore.update(state => ({
+      ...state,
+      players: [],
+      currentTurn: 0,
+      placements: {},
+      selectedFilter: 'all',
+      nextZIndex: 100,
+      allPinsPlaced: false
+    }));
+    localStorage.removeItem('ptGameHost');
+    localStorage.removeItem('ptGamePlayer');
     
     isJoining = true;
     error = null;
@@ -61,6 +75,7 @@
   });
 </script>
 
+<!-- Rest of the file remains unchanged -->
 <div class="container">
 <div class="header">
   <h1>Join a Game</h1>
