@@ -84,7 +84,7 @@
         bind:this={roomCodeInput}
         bind:value={roomCode}
         on:input={formatRoomCode}
-        placeholder="Enter 4-letter code"
+        placeholder="C-0-D-E"
         maxlength="4"
         required
       />
@@ -230,6 +230,8 @@ h3 {
   padding: 15px;
   position: relative;
   z-index: 2;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Form styles */
@@ -254,6 +256,8 @@ input {
   font-size: 1.2em;
   transition: all 0.3s ease;
   background-color: rgba(255, 255, 255, 0.8);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 input:focus {
@@ -381,8 +385,9 @@ input:focus {
 @media (max-width: 480px) {
   .container {
     margin: 10px auto;
-    padding: 20px 15px;
+    padding: 20px 12px;
     max-width: 100%;
+    width: 95%;
     border-radius: 10px;
   }
   
