@@ -80,18 +80,6 @@ $: {
     // No need to update the store here since it's done inside the FilterButtons component
   }
   
-  // Handle scoreboard row click
-  function handleScoreboardRowClick(event) {
-    const { player } = event.detail;
-    console.log(`Scoreboard row clicked for player: ${player}`);
-    
-    // Optionally filter to show only this player's placements
-    gameStore.update(state => ({
-      ...state,
-      selectedFilter: player
-    }));
-  }
-  
   // Calculate final scores based on player placements
   function calculateFinalScores() {
     const scores = {};
@@ -290,14 +278,16 @@ $: {
     scoreTable.style.width = '100%';
     scoreTable.style.borderCollapse = 'collapse';
     scoreTable.style.marginTop = '15px';
-    scoreTable.style.fontSize = '14px';
+    scoreTable.style.fontSize = '16px'; // INCREASED FONT SIZE
+    scoreTable.style.borderRadius = '8px'; // ADDED ROUNDED CORNERS
+    scoreTable.style.overflow = 'hidden'; // NEEDED FOR BORDER RADIUS TO WORK
     
     const header = document.createElement('tr');
     const rankH = document.createElement('th');
     rankH.textContent = 'Rank';
     rankH.style.backgroundColor = '#3891a6';
     rankH.style.color = 'white';
-    rankH.style.padding = '8px';
+    rankH.style.padding = '10px'; // INCREASED PADDING
     rankH.style.textAlign = 'left';
     rankH.style.border = '1px solid #ddd';
     
@@ -305,7 +295,7 @@ $: {
     playerH.textContent = 'Player';
     playerH.style.backgroundColor = '#3891a6';
     playerH.style.color = 'white';
-    playerH.style.padding = '8px';
+    playerH.style.padding = '10px'; // INCREASED PADDING
     playerH.style.textAlign = 'left';
     playerH.style.border = '1px solid #ddd';
     
@@ -313,7 +303,7 @@ $: {
     scoreH.textContent = 'Points';
     scoreH.style.backgroundColor = '#3891a6';
     scoreH.style.color = 'white';
-    scoreH.style.padding = '8px';
+    scoreH.style.padding = '10px'; // INCREASED PADDING
     scoreH.style.textAlign = 'left';
     scoreH.style.border = '1px solid #ddd';
     
@@ -336,19 +326,19 @@ $: {
       const rankTd = document.createElement('td');
       rankTd.textContent = (i + 1).toString();
       rankTd.style.border = '1px solid #ddd';
-      rankTd.style.padding = '8px';
+      rankTd.style.padding = '10px'; // INCREASED PADDING
       rankTd.style.textAlign = 'left';
       
       const playerTd = document.createElement('td');
       playerTd.textContent = s.player;
       playerTd.style.border = '1px solid #ddd';
-      playerTd.style.padding = '8px';
+      playerTd.style.padding = '10px'; // INCREASED PADDING
       playerTd.style.textAlign = 'left';
       
       const scoreTd = document.createElement('td');
       scoreTd.textContent = s.score + ' points';
       scoreTd.style.border = '1px solid #ddd';
-      scoreTd.style.padding = '8px';
+      scoreTd.style.padding = '10px'; // INCREASED PADDING
       scoreTd.style.textAlign = 'left';
       
       row.appendChild(rankTd);
@@ -381,14 +371,12 @@ $: {
 <div class="section final-scores-section">
   <h2>Final Scores</h2>
   
-  <!-- Using our new Scoreboard component -->
+  <!-- Using our new Scoreboard component with disableRowClick set to true -->
   <Scoreboard 
     scores={scoreData}
-    on:rowClick={handleScoreboardRowClick}
+    disableRowClick={true}
     customClasses="final-scores-table"
   />
-  
-  <h3>Everyone's Placements</h3>
 
   <!-- Player filter buttons using FilterButtons component -->
   <div class="player-filter-container">
@@ -403,8 +391,7 @@ $: {
        bind:this={collectivePlacementsContainerElement}
        class="collective-placements-container">
     
-    <!-- Chart title -->
-    <h3 class="chart-title">Player Placement Map</h3>
+    
     
     <!-- Here's where we use our GraphContainer component -->
     <div class="chart-wrapper">
@@ -451,26 +438,21 @@ $: {
     margin-bottom: 10px;
   }
   
-  .final-scores-section h3 {
-    font-size: 1.3em;
-    margin-top: 20px;
-    margin-bottom: 10px;
-  }
-  
   /* Add specific styles for the scoreboard within this component */
   :global(.final-scores-table) {
     margin-top: 10px;
+    border-radius: 8px;
+    overflow: hidden;
   }
   
   :global(.final-scores-section .winner-announcement) {
     color: white;
-  }
-  
-  /* Chart title and wrapper */
-  .chart-title {
-    text-align: center;
-    margin-bottom: 15px;
-    color: #4c2c69;
+    margin: 10; /* this doesn't seem to be doing anything */
+    background-color: #a6d3a0; 
+    padding: 12px;
+    border-radius: 8px;
+    color: #4c2c69; 
+    font-weight: bold;
   }
   
   .chart-wrapper {
@@ -509,6 +491,7 @@ $: {
     border-radius: 8px;
     margin-bottom: 15px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 0; /* REMOVED GAP COMPLETELY */
   }
   
   .player-filter-heading {
