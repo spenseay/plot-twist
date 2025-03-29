@@ -51,18 +51,28 @@
   }
   
   onMount(async () => {
-    // Initialize once mounted
-    await tick();
-    
+  // Add a delay to ensure all data is properly loaded from the store
+  setTimeout(async () => {
     // Wait for next tick to ensure container is rendered
     await tick();
     
     // Now render pins
     if (graphContainerRef) {
       renderPins();
+      addPlayerSpecificScoreboard();
       isInitialized = true;
     }
-  });
+  }, 200); // 200ms delay should be enough
+});
+
+// Also add a reactive statement to recalculate scores when placements change
+$: {
+  if (Object.keys(placements).length > 0 && players.length > 0) {
+    // Force score recalculation when placements data is available
+    scoreData = Object.entries(calculateFinalScores())
+                     .map(([player, score]) => ({ player, score }));
+  }
+}
   
   // Handle filter change event from FilterButtons component
   function handleFilterChanged(event) {
