@@ -119,10 +119,16 @@
       </div>
     {:else if roomData}
       <div class="room-info">
-        <div class="room-code-container">
-          <div class="room-code-label">Room Code:</div>
+        <div class="room-code-display">
+          <div class="room-code-label">Room Code</div>
           <div class="room-code">{roomCode}</div>
-          <div class="room-status">Waiting for host to start the game...</div>
+        </div>
+        
+        <div class="waiting-message">
+          <div class="emoji-container">
+            <div class="emoji">⏳</div>
+          </div>
+          <p>Waiting for the host to start the game...</p>
         </div>
         
         <div class="players-container">
@@ -153,12 +159,6 @@
             </div>
           {/if}
         </div>
-        
-        <div class="player-waiting">
-          <div class="waiting-message">
-            <p>Waiting for the host to start the game...</p>
-          </div>
-        </div>
       </div>
     {:else}
       <div class="loading">
@@ -166,34 +166,84 @@
       </div>
     {/if}
   </div>
+  
+  <!-- Decorative elements -->
+  <div class="decoration top-left"></div>
+  <div class="decoration top-right"></div>
+  <div class="decoration bottom-left"></div>
+  <div class="decoration bottom-right"></div>
 </div>
 
 <style>
+  /* Container with background gradient */
   .container {
     max-width: 600px;
-    margin: 0 auto;
-    padding: 15px;
+    margin: 30px auto;
+    padding: 25px;
     background: linear-gradient(135deg, #f9f9f9 0%, #e8f2f5 100%);
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(76, 44, 105, 0.15);
+    position: relative;
+    overflow: hidden;
     border: 2px solid #4c2c69;
   }
   
+  /* Decorative elements */
+  .decoration {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    opacity: 0.2;
+    z-index: 0;
+  }
+  
+  .top-left {
+    top: -30px;
+    left: -30px;
+    background-color: #fdc30f;
+  }
+  
+  .top-right {
+    top: -20px;
+    right: -20px;
+    background-color: #3891a6;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .bottom-left {
+    bottom: -20px;
+    left: -20px;
+    background-color: #a6d3a0;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .bottom-right {
+    bottom: -30px;
+    right: -30px;
+    background-color: #db5461;
+  }
+  
+  /* Header styles */
   .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
   }
   
   h1 {
-    font-size: 1.8em;
+    font-size: 2.4em;
     color: #4c2c69;
     margin: 0;
   }
   
   h2 {
-    font-size: 1.4em;
+    font-size: 1.6em;
     color: #4c2c69;
     margin-top: 15px;
     margin-bottom: 10px;
@@ -203,15 +253,16 @@
     background: none;
     border: none;
     color: #3891a6;
-    font-size: 1rem;
+    font-size: 1.1rem;
     cursor: pointer;
     padding: 5px 10px;
     border-radius: 4px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
   }
   
   .back-button:hover {
-    background-color: #f0f0f0;
+    background-color: rgba(56, 145, 166, 0.1);
+    transform: translateX(-2px);
   }
   
   .spacer {
@@ -219,7 +270,8 @@
   }
   
   .content {
-    padding: 10px;
+    position: relative;
+    z-index: 2;
   }
   
   .loading {
@@ -227,36 +279,73 @@
     padding: 20px;
     font-style: italic;
     color: #666;
+    font-size: 1.2em;
   }
   
   /* Room code display */
-  .room-code-container {
-    background-color: #f9f9f9;
+  .room-code-display {
+    background-color: #4c2c69;
     padding: 15px;
-    border-radius: 8px;
+    border-radius: 12px;
     text-align: center;
     margin-bottom: 20px;
-    border: 1px solid #ddd;
+    color: white;
+    box-shadow: 0 4px 0 #3a1f51, 0 5px 15px rgba(76, 44, 105, 0.3);
   }
   
   .room-code-label {
-    font-size: 0.9em;
-    color: #666;
+    font-size: 1.1em;
     margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
   }
   
   .room-code {
-    font-size: 2.5em;
+    font-size: 2.8em;
     font-weight: bold;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
+    margin: 5px 0;
+  }
+  
+  /* Waiting message */
+  .waiting-message {
+    background-color: #fdc30f;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    text-align: center;
     color: #4c2c69;
+    font-weight: bold;
+    font-size: 1.2em;
+    position: relative;
+    box-shadow: 0 4px 0 #d9a40b, 0 5px 15px rgba(253, 195, 15, 0.3);
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  
+  .emoji-container {
     margin-bottom: 10px;
   }
   
-  .room-status {
-    font-size: 0.9em;
-    color: #666;
-    font-style: italic;
+  .emoji {
+    font-size: 2.4em;
+    animation: spin 8s linear infinite;
+    display: inline-block;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .waiting-message p {
+    margin: 0;
   }
   
   /* Players list */
@@ -265,31 +354,39 @@
   }
   
   .no-players {
-    background-color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.7);
     padding: 15px;
-    border-radius: 6px;
+    border-radius: 8px;
     text-align: center;
     color: #666;
     font-style: italic;
+    font-size: 1.1em;
   }
   
   .players-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   
   .player-item {
-    background-color: #f0f0f0;
-    padding: 12px 15px;
-    border-radius: 6px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+  }
+  
+  .player-item:hover {
+    transform: translateX(3px);
   }
   
   .player-item.host {
     background-color: #fdc30f;
+    box-shadow: 0 2px 4px rgba(253, 195, 15, 0.3);
   }
   
   .player-item.you {
@@ -301,26 +398,25 @@
     color: #4c2c69;
     display: flex;
     align-items: center;
+    font-size: 1.2em;
+  }
+  
+  .host-badge, .you-badge {
+    font-size: 0.7em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-left: 10px;
+    font-weight: normal;
   }
   
   .host-badge {
     background-color: #4c2c69;
     color: white;
-    font-size: 0.7em;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 8px;
-    font-weight: normal;
   }
   
   .you-badge {
     background-color: #3891a6;
     color: white;
-    font-size: 0.7em;
-    padding: 2px 6px;
-    border-radius: 10px;
-    margin-left: 8px;
-    font-weight: normal;
   }
   
   .player-status {
@@ -328,38 +424,15 @@
   }
   
   .status {
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.85em;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
   }
   
   .status.ready {
     background-color: #a6d3a0;
     color: #2a6b34;
-  }
-  
-  /* Waiting message */
-  .player-waiting {
-    margin-top: 20px;
-  }
-  
-  .waiting-message {
-    background-color: #fdc30f;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-    animation: pulse 2s infinite;
-  }
-  
-  .waiting-message p {
-    color: #4c2c69;
-    font-weight: bold;
-  }
-  
-  @keyframes pulse {
-    0% { opacity: 0.8; }
-    50% { opacity: 1; }
-    100% { opacity: 0.8; }
   }
   
   /* Error message */
@@ -368,11 +441,11 @@
     border-left: 4px solid #e53e3e;
     padding: 15px;
     margin-bottom: 20px;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #e53e3e;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
   }
   
   .try-again {
@@ -383,35 +456,88 @@
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    font-size: 1.1em;
   }
   
   .try-again:hover {
     background-color: #c53030;
+    transform: translateY(-2px);
   }
   
+  /* Responsive styles */
   @media (min-width: 768px) {
     .container {
       max-width: 700px;
-      padding: 20px;
+      padding: 30px;
+    }
+    
+    h1 {
+      font-size: 2.8em;
     }
   }
   
   @media (max-width: 480px) {
     .container {
-      padding: 12px;
+      margin: 10px auto;
+      padding: 20px 15px;
+      max-width: 100%;
     }
     
     h1 {
-      font-size: 1.5em;
+      font-size: 2.6em;
+    }
+    
+    h2 {
+      font-size: 1.8em;
     }
     
     .back-button {
-      font-size: 0.9rem;
+      font-size: 1.2rem;
     }
     
     .room-code {
-      font-size: 2em;
+      font-size: 3.2em;
+    }
+    
+    .room-code-label {
+      font-size: 1.3em;
+    }
+    
+    .waiting-message {
+      padding: 25px 15px;
+      font-size: 1.5em;
+    }
+    
+    .emoji {
+      font-size: 3em;
+    }
+    
+    .player-item {
+      padding: 15px;
+    }
+    
+    .player-name {
+      font-size: 1.6em;
+    }
+    
+    .host-badge, .you-badge {
+      font-size: 0.6em;
+      padding: 4px 10px;
+    }
+    
+    .status {
+      font-size: 1em;
+      padding: 6px 12px;
+    }
+    
+    .decoration {
+      opacity: 0.15;
+    }
+    
+    .no-players {
+      font-size: 1.3em;
+      padding: 20px;
     }
   }
 </style>

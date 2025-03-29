@@ -163,7 +163,7 @@
     {:else if roomData}
       <div class="room-info">
         <div class="room-code-container">
-          <div class="room-code-label">Room Code:</div>
+          <div class="room-code-label">Room Code</div>
           <div class="room-code">
             {roomCode}
             <button class="copy-button" on:click={copyRoomCode}>
@@ -224,34 +224,84 @@
       </div>
     {/if}
   </div>
+  
+  <!-- Decorative elements -->
+  <div class="decoration top-left"></div>
+  <div class="decoration top-right"></div>
+  <div class="decoration bottom-left"></div>
+  <div class="decoration bottom-right"></div>
 </div>
 
 <style>
+  /* Container with background gradient */
   .container {
     max-width: 600px;
-    margin: 0 auto;
-    padding: 15px;
+    margin: 30px auto;
+    padding: 25px;
     background: linear-gradient(135deg, #f9f9f9 0%, #e8f2f5 100%);
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(76, 44, 105, 0.15);
+    position: relative;
+    overflow: hidden;
     border: 2px solid #4c2c69;
   }
   
+  /* Decorative elements */
+  .decoration {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    opacity: 0.2;
+    z-index: 0;
+  }
+  
+  .top-left {
+    top: -30px;
+    left: -30px;
+    background-color: #fdc30f;
+  }
+  
+  .top-right {
+    top: -20px;
+    right: -20px;
+    background-color: #3891a6;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .bottom-left {
+    bottom: -20px;
+    left: -20px;
+    background-color: #a6d3a0;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .bottom-right {
+    bottom: -30px;
+    right: -30px;
+    background-color: #db5461;
+  }
+  
+  /* Header styles */
   .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
   }
   
   h1 {
-    font-size: 1.8em;
+    font-size: 2.4em;
     color: #4c2c69;
     margin: 0;
   }
   
   h2 {
-    font-size: 1.4em;
+    font-size: 1.6em;
     color: #4c2c69;
     margin-top: 15px;
     margin-bottom: 10px;
@@ -261,15 +311,16 @@
     background: none;
     border: none;
     color: #3891a6;
-    font-size: 1rem;
+    font-size: 1.1rem;
     cursor: pointer;
     padding: 5px 10px;
     border-radius: 4px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
   }
   
   .back-button:hover {
-    background-color: #f0f0f0;
+    background-color: rgba(56, 145, 166, 0.1);
+    transform: translateX(-2px);
   }
   
   .spacer {
@@ -277,7 +328,8 @@
   }
   
   .content {
-    padding: 10px;
+    position: relative;
+    z-index: 2;
   }
   
   .loading {
@@ -285,30 +337,33 @@
     padding: 20px;
     font-style: italic;
     color: #666;
+    font-size: 1.2em;
   }
   
   /* Room code display */
   .room-code-container {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 8px;
+    background-color: #4c2c69;
+    padding: 20px;
+    border-radius: 12px;
     text-align: center;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
+    margin-bottom: 25px;
+    color: white;
+    box-shadow: 0 4px 0 #3a1f51, 0 5px 15px rgba(76, 44, 105, 0.3);
   }
   
   .room-code-label {
-    font-size: 0.9em;
-    color: #666;
+    font-size: 1.1em;
     margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
   }
   
   .room-code {
-    font-size: 2.5em;
+    font-size: 2.8em;
     font-weight: bold;
     letter-spacing: 0.1em;
-    color: #4c2c69;
-    margin-bottom: 5px;
+    margin: 10px 0;
     position: relative;
     display: flex;
     align-items: center;
@@ -321,14 +376,15 @@
     border: none;
     border-radius: 4px;
     padding: 5px 10px;
-    font-size: 0.35em;
+    font-size: 0.4em;
     cursor: pointer;
-    margin-left: 10px;
-    transition: background-color 0.2s;
+    margin-left: 15px;
+    transition: all 0.2s;
   }
   
   .copy-button:hover {
     background-color: #2f758a;
+    transform: translateY(-2px);
   }
   
   .copy-success {
@@ -336,50 +392,72 @@
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
+    background-color: #fdc30f;
     color: #4c2c69;
     font-size: 0.4em;
     font-weight: normal;
-    background-color: #fdc30f;
-    padding: 3px 8px;
+    padding: 3px 10px;
     border-radius: 4px;
+    animation: fadeIn 0.3s;
+  }
+  
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translate(-50%, 5px); }
+    100% { opacity: 1; transform: translate(-50%, 0); }
   }
   
   .room-code-help {
-    font-size: 0.9em;
-    color: #666;
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin-top: 10px;
   }
   
   /* Players list */
   .players-container {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
   }
   
   .no-players {
-    background-color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.7);
     padding: 15px;
-    border-radius: 6px;
+    border-radius: 8px;
     text-align: center;
     color: #666;
     font-style: italic;
+    font-size: 1.1em;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
   }
   
   .players-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   
   .player-item {
-    background-color: #f0f0f0;
-    padding: 12px 15px;
-    border-radius: 6px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+  }
+  
+  .player-item:hover {
+    transform: translateX(3px);
   }
   
   .player-item.host {
     background-color: #fdc30f;
+    box-shadow: 0 2px 4px rgba(253, 195, 15, 0.3);
   }
   
   .player-name {
@@ -387,15 +465,16 @@
     color: #4c2c69;
     display: flex;
     align-items: center;
+    font-size: 1.2em;
   }
   
   .host-badge {
     background-color: #4c2c69;
     color: white;
     font-size: 0.7em;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 10px;
-    margin-left: 8px;
+    margin-left: 10px;
     font-weight: normal;
   }
   
@@ -404,9 +483,10 @@
   }
   
   .status {
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.85em;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
   }
   
   .status.ready {
@@ -424,30 +504,30 @@
     color: white;
     border: none;
     width: 100%;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 1.1em;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 1.3em;
+    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
-    box-shadow: 0 4px 0 #3a2050, 0 5px 10px rgba(76, 44, 105, 0.3);
+    transition: all 0.3s;
+    box-shadow: 0 4px 0 #3a1f51, 0 5px 15px rgba(76, 44, 105, 0.3);
   }
   
   .start-button:hover:not(:disabled) {
-    background-color: #3a1f51;
-    box-shadow: 0 7px 0 #3a2050, 0 8px 15px rgba(76, 44, 105, 0.4);
     transform: translateY(-3px);
+    box-shadow: 0 7px 0 #3a1f51, 0 8px 15px rgba(76, 44, 105, 0.4);
   }
   
   .start-button:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: 0 2px 0 #3a2050, 0 3px 5px rgba(76, 44, 105, 0.3);
+    box-shadow: 0 2px 0 #3a1f51, 0 3px 5px rgba(76, 44, 105, 0.3);
   }
   
   .start-button:disabled {
-    background-color: #cccccc;
+    background-color: #a8a8a8;
     cursor: not-allowed;
-    opacity: 0.7;
-    box-shadow: none;
+    box-shadow: 0 4px 0 #858585;
+    opacity: 0.8;
   }
   
   /* Error message */
@@ -456,11 +536,11 @@
     border-left: 4px solid #e53e3e;
     padding: 15px;
     margin-bottom: 20px;
-    border-radius: 4px;
+    border-radius: 8px;
     color: #e53e3e;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
   }
   
   .try-again {
@@ -471,35 +551,95 @@
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    font-size: 1.1em;
   }
   
   .try-again:hover {
     background-color: #c53030;
+    transform: translateY(-2px);
   }
   
+  /* Responsive styles */
   @media (min-width: 768px) {
     .container {
       max-width: 700px;
-      padding: 20px;
+      padding: 30px;
+    }
+    
+    h1 {
+      font-size: 2.8em;
     }
   }
   
   @media (max-width: 480px) {
     .container {
-      padding: 12px;
+      margin: 10px auto;
+      padding: 20px 15px;
+      max-width: 100%;
     }
     
     h1 {
-      font-size: 1.5em;
+      font-size: 2.6em;
+    }
+    
+    h2 {
+      font-size: 1.8em;
     }
     
     .back-button {
-      font-size: 0.9rem;
+      font-size: 1.2rem;
     }
     
     .room-code {
-      font-size: 2em;
+      font-size: 3.2em;
+    }
+    
+    .room-code-label {
+      font-size: 1.3em;
+    }
+    
+    .room-code-help {
+      font-size: 1.3em;
+    }
+    
+    .copy-button {
+      padding: 8px 12px;
+      font-size: 0.35em;
+      border-radius: 6px;
+    }
+    
+    .player-item {
+      padding: 15px;
+    }
+    
+    .player-name {
+      font-size: 1.6em;
+    }
+    
+    .host-badge {
+      font-size: 0.6em;
+      padding: 4px 10px;
+    }
+    
+    .status {
+      font-size: 1em;
+      padding: 6px 12px;
+    }
+    
+    .start-button {
+      padding: 18px;
+      font-size: 1.6em;
+      border-radius: 10px;
+    }
+    
+    .decoration {
+      opacity: 0.15;
+    }
+    
+    .no-players {
+      font-size: 1.3em;
+      padding: 20px;
     }
   }
 </style>
