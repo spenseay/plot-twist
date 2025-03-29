@@ -75,12 +75,6 @@
 </script>
 
 <div class="container">
-  <div class="header">
-    <div class="spacer-left"></div>
-    <div class="spacer-center"></div>
-    <button class="back-button" on:click={goToMainMenu}>← Menu</button>
-  </div>
-
   <!-- Setup Section -->
   {#if setupSectionVisible}
     <SetupSection on:startGame={startGame} />
@@ -95,6 +89,11 @@
   {#if finalScoresSectionVisible}
     <ScoreSection on:resetGame={resetGame} />
   {/if}
+  
+  <!-- Back button at bottom left -->
+  <div class="back-button-container">
+    <button class="back-button" on:click={goToMainMenu}>← Menu</button>
+  </div>
 </div>
 
 <style>
@@ -128,33 +127,34 @@
     background-color: white;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    position: relative;
+    padding-bottom: 70px; /* Make room for the back button */
   }
   
-  /* Header with back button */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 15px;
+  /* Back button container */
+  .back-button-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
   }
   
+  /* Back button style */
   .back-button {
-    background: none;
+    background-color: #3891a6;
+    color: white;
     border: none;
-    color: #3891a6;
+    border-radius: 50px;
+    padding: 10px 20px;
     font-size: 1rem;
     cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.2s;
   }
   
   .back-button:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .spacer-left, .spacer-center {
-    width: 70px; /* Approximate width to match back button */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
   }
 
   /* Responsive styles */
@@ -162,20 +162,29 @@
     .container {
       max-width: 800px;
       padding: 15px;
+      padding-bottom: 70px;
+    }
+    
+    .back-button {
+      font-size: 1.1rem;
+      padding: 12px 24px;
     }
   }
   
   @media (max-width: 480px) {
     .container {
       padding: 8px;
+      padding-bottom: 70px;
     }
     
     .back-button {
       font-size: 0.9rem;
+      padding: 8px 16px;
     }
     
-    .spacer-left, .spacer-center {
-      width: 60px;
+    .back-button-container {
+      bottom: 15px;
+      left: 15px;
     }
   }
 </style>

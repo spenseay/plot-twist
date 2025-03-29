@@ -61,10 +61,7 @@
 
 <div class="container">
 <div class="header">
-  <div class="title-container">
-    <h1>Host a Game</h1>
-  </div>
-  <button class="back-button" on:click={goBack}>← Back</button>
+  <h1>Host a Game</h1>
 </div>
 
 <div class="content">
@@ -108,6 +105,11 @@
   </div>
 </div>
 
+<!-- Back button at bottom left -->
+<div class="back-button-container">
+  <button class="back-button" on:click={goBack}>← Back</button>
+</div>
+
 <!-- Decorative elements -->
 <div class="decoration top-left"></div>
 <div class="decoration top-right"></div>
@@ -128,6 +130,7 @@
   position: relative;
   overflow: hidden;
   border: 2px solid #4c2c69;
+  padding-bottom: 70px; /* Make room for the back button */
 }
 
 /* Decorative elements */
@@ -170,17 +173,10 @@
 
 /* Header section */
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
   margin-bottom: 20px;
   position: relative;
   z-index: 2;
-}
-
-.title-container {
-  flex: 1;
-  text-align: center;
 }
 
 h1 {
@@ -196,22 +192,30 @@ h3 {
   font-size: 1.3em;
 }
 
+/* Back button container */
+.back-button-container {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 100;
+}
+
+/* Back button style */
 .back-button {
-  position: absolute;
-  right: 0;
-  background: none;
+  background-color: #3891a6;
+  color: white;
   border: none;
-  color: #3891a6;
-  font-size: 1.1rem;
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   transition: all 0.2s;
 }
 
 .back-button:hover {
-  background-color: rgba(56, 145, 166, 0.1);
-  transform: translateX(-2px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .content {
@@ -339,6 +343,7 @@ input:focus {
   .container {
     max-width: 700px;
     padding: 30px;
+    padding-bottom: 80px;
   }
   
   h1 {
@@ -347,6 +352,11 @@ input:focus {
   
   .content {
     padding: 20px;
+  }
+  
+  .back-button {
+    font-size: 1.1rem;
+    padding: 12px 24px;
   }
 }
 
@@ -357,14 +367,21 @@ input:focus {
     max-width: 100%;
     width: 95%;
     border-radius: 10px;
+    padding-bottom: 70px;
   }
   
   h1 {
-    font-size: 2.6em;
+    font-size: 2.4em;
   }
   
   .back-button {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+  
+  .back-button-container {
+    bottom: 15px;
+    left: 15px;
   }
   
   label {
