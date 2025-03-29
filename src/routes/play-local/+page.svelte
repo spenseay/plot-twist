@@ -76,9 +76,9 @@
 
 <div class="container">
   <div class="header">
+    <div class="spacer-left"></div>
+    <div class="spacer-center"></div>
     <button class="back-button" on:click={goToMainMenu}>← Menu</button>
-    <h1>Plot Twist!</h1>
-    <div class="spacer"></div> <!-- For centered title -->
   </div>
 
   <!-- Setup Section -->
@@ -153,7 +153,7 @@
     background-color: #f0f0f0;
   }
   
-  .spacer {
+  .spacer-left, .spacer-center {
     width: 70px; /* Approximate width to match back button */
   }
 
@@ -170,20 +170,11 @@
       padding: 8px;
     }
     
-    h1 {
-      font-size: 24px;
-    }
-    /*
-    h2 {
-      font-size: 20px;
-    }
-      */
-    
     .back-button {
       font-size: 0.9rem;
     }
     
-    .spacer {
+    .spacer-left, .spacer-center {
       width: 60px;
     }
   }

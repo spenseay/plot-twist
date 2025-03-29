@@ -104,9 +104,10 @@
 
 <div class="container">
   <div class="header">
+    <div class="title-container">
+      <h1>Waiting Room</h1>
+    </div>
     <button class="back-button" on:click={leaveRoom}>← Leave</button>
-    <h1>Waiting Room</h1>
-    <div class="spacer"></div>
   </div>
   
   <div class="content">
@@ -230,10 +231,15 @@
   .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 20px;
     position: relative;
     z-index: 2;
+  }
+  
+  .title-container {
+    flex: 1;
+    text-align: center;
   }
   
   h1 {
@@ -250,6 +256,8 @@
   }
   
   .back-button {
+    position: absolute;
+    right: 0;
     background: none;
     border: none;
     color: #3891a6;
@@ -263,10 +271,6 @@
   .back-button:hover {
     background-color: rgba(56, 145, 166, 0.1);
     transform: translateX(-2px);
-  }
-  
-  .spacer {
-    width: 70px;
   }
   
   .content {

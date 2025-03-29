@@ -181,9 +181,9 @@
 
 <div class="container">
   <div class="header">
+    <div class="spacer-left"></div> 
+    <div class="spacer-center"></div>
     <button class="back-button" on:click={leaveGame}>← Menu</button>
-    <h1>Plot Twist! Party Mode</h1>
-    <div class="spacer"></div>
   </div>
   
   <div class="content">
@@ -250,24 +250,6 @@
     margin-bottom: 15px;
   }
   
-  h1 {
-    font-size: 1.5em;
-    color: #4c2c69;
-    margin: 0;
-  }
-  
-  h2 {
-    font-size: 1.3em;
-    color: #4c2c69;
-    margin-bottom: 10px;
-  }
-  
-  h3 {
-    font-size: 1.1em;
-    color: #4c2c69;
-    margin-bottom: 8px;
-  }
-  
   .back-button {
     background: none;
     border: none;
@@ -283,7 +265,7 @@
     background-color: #f0f0f0;
   }
   
-  .spacer {
+  .spacer-left, .spacer-center {
     width: 70px;
   }
   
@@ -390,19 +372,11 @@
       max-width: 700px;
       padding: 20px;
     }
-    
-    h1 {
-      font-size: 1.8em;
-    }
   }
   
   @media (max-width: 480px) {
     .container {
       padding: 12px;
-    }
-    
-    h1 {
-      font-size: 1.3em;
     }
     
     button {
